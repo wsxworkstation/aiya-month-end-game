@@ -430,9 +430,54 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
 @keyframes fadeAway { to { opacity: 0; transform: translateY(10px) scale(.92); } }
 
 @media (max-width: 620px) {
-  .draw-row { gap: 9px; }
-  .card-back { width: min(104px, 28vw); border-width: 3px; }
+  .draw-row { gap: 8px; }
+  .card-back { width: min(100px, 25vw); border-width: 3px; }
   .card-back-q { font-size: 30px; }
   .card-back-mark { font-size: 10px; letter-spacing: 2px; }
   .dodged-row .game-card { width: min(70px, 23vw); }
 }
+
+/* Short viewports (phone landscape): the whole ceremony has to fit without the
+   modal turning into a scroller, or the player cannot see all three backs at once. */
+@media (max-height: 470px) {
+  .draw-row { gap: 10px; margin: 10px auto 2px; }
+  .card-back { width: min(86px, 17vw); padding: 5px; border-width: 3px; }
+  .card-back-q { font-size: 23px; }
+  .card-back-mark { font-size: 9px; letter-spacing: 2px; }
+  .reveal-wrap { margin-top: 6px; }
+  .reveal-card { width: min(162px, 23vw); }
+  /* At this size the footer's divider rule lands on top of the effect text; the meta
+     line ("本月命运" etc.) is decorative, so drop it and give the copy the room. */
+  .reveal-card .card-meta { display: none; }
+  /* No room for the near-miss flourish or the blurb on a 390px-tall screen: keeping
+     them pushes the confirm button below the fold. */
+  .dodged-label, .dodged-row, .card-draw .draw-hint { display: none; }
+  .modal:has(.card-draw) { padding: 12px 16px; }
+  .card-draw .eyebrow { margin-bottom: 3px; font-size: 10px; }
+  .card-draw h2 { margin-bottom: 4px; font-size: 19px; }
+  .card-draw .full-button { margin-top: 8px; min-height: 40px; }
+}
+
+/* .card-body is a flex column, so on the narrow phone collection grid the title gets
+   compressed below its own line box and the glyphs clip along the bottom. */
+.collection-card .card-title { flex: 0 0 auto; min-height: 1.2em; }
+
+/* Landscape phones are short, not narrow: shrink the ceremony vertically so the
+   revealed card, the near-misses and the confirm button all fit without scrolling. */
+@media (max-height: 520px) {
+  .draw-row { gap: 10px; margin: 10px auto 2px; }
+  .card-back { width: min(92px, 19vw); border-width: 3px; }
+  .card-back-q { font-size: 24px; }
+  .card-back-mark { font-size: 9px; letter-spacing: 1px; }
+  .reveal-wrap { margin-top: 8px; }
+  .reveal-card { width: min(124px, 30vw); }
+  .reveal-card:has(.offer-pair) { width: min(240px, 58vw); }
+  .dodged-label { margin: 8px 0 4px; font-size: 9px; }
+  .dodged-row .game-card { width: min(58px, 14vw); }
+}
+
+/* Collection thumbnails are identification only, and the longer card names (9 CJK
+   chars) wrap to two lines and push the footer out of the card. The "已收集" footer is
+   redundant on a thumbnail -- an unlocked card is already visibly unlocked -- so drop
+   it rather than shrinking every card's font. */
+.collection-card .card-meta { display: none; }

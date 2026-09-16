@@ -376,9 +376,11 @@
         <span class="card-back-inner"><span class="card-back-mark">月底</span><span class="card-back-q">?</span></span>
       </button>`).join("");
 
-    openModal(`<p class="eyebrow">${eyebrow}</p><h2>${title}</h2>
-      <p class="modal-intro">${hint}</p>
-      <div class="draw-row" id="draw-row">${backs}</div>`, { closable: false });
+    openModal(`<div class="card-draw">
+      <p class="eyebrow">${eyebrow}</p><h2>${title}</h2>
+      <p class="modal-intro draw-hint">${hint}</p>
+      <div class="draw-row" id="draw-row">${backs}</div>
+    </div>`, { closable: false });
 
     let taken = false;
     $$("#draw-row .card-back").forEach(button => button.addEventListener("click", () => {

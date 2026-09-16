@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#17152d">
+  <title>哎呀，又月底了呀</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="app" aria-label="哎呀，又月底了呀游戏">
+    <section id="title-screen" class="screen title-screen">
+      <div class="title-cloud cloud-a"></div>
+      <div class="title-cloud cloud-b"></div>
+      <div class="title-building building-a"></div>
+      <div class="title-building building-b"></div>
+      <div class="title-panel pixel-panel">
+        <p class="eyebrow">12个月 · 5分钟 · 别破产</p>
+        <h1>哎呀，<br><span>又月底了呀</span></h1>
+        <p class="subtitle">走路、打工、吃饭、抽卡、投资——<br>还有，记得回家睡觉。</p>
+        <div class="title-actions">
+          <button id="new-game-btn" class="pixel-btn primary">开始新生活</button>
+          <button id="resume-btn" class="pixel-btn secondary" hidden>继续刚才的月份</button>
+          <button id="collection-btn" class="pixel-btn ghost">卡片图鉴</button>
+        </div>
+        <p class="controls-hint">电脑：WASD / 方向键　互动：E / 空格　手机：屏幕按钮</p>
+      </div>
+      <div class="pixel-person title-person" aria-hidden="true">
+        <span class="hair"></span><span class="face"></span><span class="body"></span><span class="leg left"></span><span class="leg right"></span>
+      </div>
+    </section>
+
+    <section id="game-screen" class="screen game-screen" hidden>
+      <header class="hud" aria-label="游戏状态">
+        <div class="hud-brand">
+          <span class="mini-logo">月底</span>
+          <strong id="month-label">第1月</strong>
+        </div>
+        <div class="hud-stats">
+          <div class="hud-stat wallet"><span>钱包</span><strong id="wallet-label">$500</strong></div>
+          <div class="hud-stat bank"><span>银行</span><strong id="bank-label">$0</strong></div>
+          <div class="hud-stat motivation"><span>动力</span><strong id="motivation-label">60</strong></div>
+          <div class="hud-stat luck"><span>幸运</span><strong id="luck-label">50 · 普通</strong></div>
+        </div>
+        <div class="hud-clock">
+          <span id="day-phase">白天</span>
+          <strong id="timer-label">05:00</strong>
+        </div>
+        <div class="hud-actions">
+          <button id="bag-btn" class="icon-btn" aria-label="打开背包">🎒<span id="bag-count">0</span></button>
+          <button id="audio-btn" class="icon-btn" aria-label="切换声音">🔊</button>
+          <button id="help-btn" class="icon-btn" aria-label="查看帮助">?</button>
+        </div>
+      </header>
+
+      <div id="rent-warning" class="rent-warning" hidden>⚠ 银行余额不足以支付本月房租</div>
+
+      <div class="game-stage">
+        <canvas id="game-canvas" width="960" height="540" aria-label="8-bit小镇游戏地图"></canvas>
+        <div id="location-label" class="location-label">月底小镇</div>
+        <div id="interaction-hint" class="interaction-hint" hidden>E · 互动</div>
+      </div>
+
+      <aside class="month-checklist" aria-label="本月事项">
+        <strong>本月</strong>
+        <span id="check-work">□ 工作</span>
+        <span id="check-food">□ 吃饭</span>
+        <span id="check-fun">□ 娱乐</span>
+        <span id="check-roi">□ ROI</span>
+      </aside>
+
+      <div class="mobile-controls" aria-label="手机控制器">
+        <div class="dpad">
+          <button data-move="up" aria-label="向上">▲</button>
+          <button data-move="left" aria-label="向左">◀</button>
+          <button data-move="down" aria-label="向下">▼</button>
+          <button data-move="right" aria-label="向右">▶</button>
+        </div>
+        <button id="mobile-action" class="action-button" aria-label="点击互动" hidden>Click</button>
+      </div>
+    </section>
+
+    <section id="end-screen" class="screen end-screen" hidden>
+      <div class="ending-card pixel-panel">
+        <p id="ending-kicker" class="eyebrow">12个月结束</p>
+        <h2 id="ending-title">月底幸存者</h2>
+        <div id="ending-art" class="ending-art" aria-hidden="true">💰</div>
+        <p id="ending-message"></p>
+        <div class="ending-total"><span>最终总资产</span><strong id="ending-assets">$0</strong></div>
+        <button id="restart-btn" class="pixel-btn primary">再活一次</button>
+        <button id="ending-collection-btn" class="pixel-btn ghost">查看图鉴</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Outside #game-screen on purpose: .screen is position:fixed, which makes its own
+       stacking context, so a toast inside it can never paint above the modal layer. -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div id="modal-layer" class="modal-layer" hidden>
+    <div id="modal" class="modal pixel-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button id="modal-close" class="modal-close" aria-label="关闭">×</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <template id="card-template">
+    <button class="game-card">
+      <span class="card-icon"></span>
+      <strong class="card-title"></strong>
+      <span class="card-copy"></span>
+      <span class="card-meta"></span>
+    </button>
+  </template>
+
+  <script src="game.js"></script>
+</body>
+</html>

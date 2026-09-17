@@ -495,3 +495,5 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
 .hud-stat.bank.short { border-color: rgba(255,120,120,.75); background: rgba(219,65,76,.22); }
 .hud-stat.bank.short strong { color: #ffb4b4; }
 .hud-stat.bank.short::before { background: #db414c; color: #fff; }
+
+.status-chip.warn { color: #8a3b18; background: #ffe0bd; border-color: #b4622d; }

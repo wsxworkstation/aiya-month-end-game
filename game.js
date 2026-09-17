@@ -61,7 +61,7 @@
     "stock:tech": ["main", 12], "stock:foodco": ["main", 13], "stock:transit": ["main", 14],
     "stock:energy": ["main", 15], "stock:funco": ["main", 16],
     "roi:steady": ["main", 17], "roi:growth": ["main", 18], "roi:bold": ["main", 19],
-    "work:600": ["main", 20], "work:700": ["main", 21], "work:800": ["main", 22], "work:900": ["main", 23],
+    "work:easy": ["main", 20], "work:normal": ["main", 21], "work:hard": ["main", 22],
     "food:nasi": ["main", 24], "food:roti": ["main", 25], "food:big": ["main", 26],
     "food:lucky": ["main", 27], "food:spicy": ["main", 28], "food:free": ["main", 29],
     "fun:movie": ["main", 30], "fun:arcade": ["main", 31], "fun:tea": ["main", 32],
@@ -86,6 +86,33 @@
     image.src = src;
     return image;
   }
+
+  // Energy (动力) is the month's only budget: there is no clock. Every number the
+  // player has to plan around lives here so it can be tuned in one place.
+  const ENERGY = {
+    monthStart: 100,
+    noSleepPenalty: 25,       // collapse outdoors and next month opens short
+    pixelsPerPoint: 80,       // walking the full 960px map costs about 12
+    partTime: 20,
+    bank: 3,
+    stock: 5,
+    roi: 10,
+    shop: 3,
+    // Eating and working stay repeatable, so both need diminishing returns or the
+    // pair becomes an infinite money loop (buy energy cheap, sell it dear).
+    mealFalloff: [1, 0.6, 0.3, 0.1],
+    workFalloff: [1, 0.7, 0.5, 0.35],
+    // The clock is driven by energy *spent*, never by energy left, so eating or using
+    // a tool cannot rewind the sky. You just end up working later into the night.
+    afternoonAt: 35,
+    nightAt: 75
+  };
+
+  const WORK_TIERS = [
+    { id: "easy", name: "简单的活", icon: "🧹", energy: 15, pay: 400, span: 12, copy: "动力-15，工资$400。题目很简单" },
+    { id: "normal", name: "普通的活", icon: "💼", energy: 30, pay: 700, span: 25, copy: "动力-30，工资$700。题目普通" },
+    { id: "hard", name: "困难的活", icon: "🧠", energy: 50, pay: 1100, span: 40, copy: "动力-50，工资$1100。题目会让你想一下" }
+  ];
 
   const STOCKS = [
     { id: "tech", name: "嗖嗖科技", icon: "💻", price: 66 },
@@ -131,13 +158,13 @@
     { id: "shoes", name: "飞毛腿跑鞋", icon: "👟", copy: "本月走路速度+15%", use: () => { state.speedBonus += 0.15; } },
     { id: "calculator", name: "不太作弊计算器", icon: "🧮", copy: "下一道数学题答错也不扣工资", use: () => { state.mathShield = true; } },
     { id: "meal", name: "免费餐券", icon: "🎟️", copy: "本月食物免费", use: () => { state.freeFood = true; } },
-    { id: "bus", name: "飞快巴士票", icon: "🚌", copy: "立刻节省20秒", use: () => { state.remainingSec = Math.min(360, state.remainingSec + 20); } },
+    { id: "bus", name: "飞快巴士票", icon: "🚌", copy: "立刻动力+12，省下走路的力气", use: () => { state.motivation += 12; } },
     { id: "alarm", name: "超级闹钟", icon: "⏰", copy: "本月睡觉额外恢复5动力", use: () => { state.sleepBonus += 5; } },
     { id: "paper", name: "市场小道消息", icon: "📰", copy: "交易所显示本月走势提示", use: () => { state.marketHint = true; } },
     { id: "coin", name: "捡到的幸运硬币", icon: "🪙", copy: "永久幸运+2", use: () => { state.luck = clamp(state.luck + 2, 0, 100); } },
-    { id: "coffee", name: "三合一咖啡", icon: "☕", copy: "立刻动力+25", use: () => { state.motivation = clamp(state.motivation + 25, 0, 100); } },
+    { id: "coffee", name: "三合一咖啡", icon: "☕", copy: "立刻动力+25", use: () => { state.motivation += 25; } },
     { id: "earplug", name: "隔音耳塞", icon: "🎧", copy: "本月睡觉额外恢复8动力", use: () => { state.sleepBonus += 8; } },
-    { id: "shortcut", name: "抄近路地图", icon: "🗺️", copy: "立刻节省30秒", use: () => { state.remainingSec = Math.min(360, state.remainingSec + 30); } },
+    { id: "shortcut", name: "抄近路地图", icon: "🗺️", copy: "立刻动力+18", use: () => { state.motivation += 18; } },
     { id: "amulet", name: "转运手绳", icon: "🧿", copy: "本月幸运+5", use: () => { state.monthLuckBonus += 5; } },
     { id: "energydrink", name: "提神饮料", icon: "⚡", copy: "本月走路速度+25%", use: () => { state.speedBonus += 0.25; } }
   ];
@@ -167,14 +194,14 @@
 
   const FATE_CARDS = [
     { id: "bonus", type: "good", name: "老板忘了自己小气", icon: "💵", copy: "钱包+$100", apply: () => state.wallet += 100 },
-    { id: "bus", type: "good", name: "巴士居然没迟到", icon: "🚌", copy: "本月时间+20秒", apply: () => state.remainingSec += 20 },
+    { id: "bus", type: "good", name: "巴士居然没迟到", icon: "🚌", copy: "动力+12", apply: () => state.motivation += 12 },
     { id: "rent", type: "good", name: "房东今天心情很好", icon: "🏠", copy: "本月房租减少20%", apply: () => state.rentDiscount = 0.2 },
-    { id: "energy", type: "good", name: "醒来没有腰酸背痛", icon: "✨", copy: "动力+10", apply: () => state.motivation = clamp(state.motivation + 10, 0, 100) },
+    { id: "energy", type: "good", name: "醒来没有腰酸背痛", icon: "✨", copy: "动力+10", apply: () => state.motivation += 10 },
     { id: "bankday", type: "good", name: "银行庆典月", icon: "🏦", copy: "本月银行利息提高至8%", apply: () => state.bankRate = 0.08 },
     { id: "phone", type: "bad", name: "手机自由落体", icon: "📱", copy: "产生$80命运债务", apply: () => state.debt += 80 },
-    { id: "cold", type: "bad", name: "冷气开太大，感冒了", icon: "🤧", copy: "本月时间-15秒、动力-5", apply: () => { state.remainingSec -= 15; state.motivation -= 5; } },
+    { id: "cold", type: "bad", name: "冷气开太大，感冒了", icon: "🤧", copy: "动力-14", apply: () => { state.motivation -= 14; } },
     { id: "leak", type: "bad", name: "天花板开始下小雨", icon: "🪣", copy: "产生$60命运债务", apply: () => state.debt += 60 },
-    { id: "lost", type: "bad", name: "钥匙在手上却找了半天", icon: "🔑", copy: "本月时间-10秒", apply: () => state.remainingSec -= 10 },
+    { id: "lost", type: "bad", name: "钥匙在手上却找了半天", icon: "🔑", copy: "动力-8", apply: () => state.motivation -= 8 },
     { id: "snack", type: "choice", name: "同事请吃神秘零食", icon: "🍘", copy: "动力+8，但幸运-1", apply: () => { state.motivation += 8; state.luck -= 1; } },
     { id: "overtime", type: "choice", name: "老板问：今晚有空吗？", icon: "🌙", copy: "钱包+$120，但动力-10", apply: () => { state.wallet += 120; state.motivation -= 10; } },
     { id: "coin", type: "choice", name: "路边闪闪发光", icon: "🪙", copy: "钱包+$30、幸运+1", apply: () => { state.wallet += 30; state.luck += 1; } },
@@ -185,20 +212,20 @@
     { id: "angpow", type: "good", name: "亲戚突然发红包", icon: "🧧", copy: "钱包+$150，但被问了三次几时结婚", apply: () => { state.wallet += 150; state.motivation -= 3; } },
     { id: "promo", type: "good", name: "超市大促销", icon: "🛒", copy: "本月食物免费。你囤了三个月的泡面", apply: () => state.freeFood = true },
     { id: "extrameat", type: "good", name: "摊主手抖多给一块肉", icon: "🍗", copy: "动力+12、幸运+1", apply: () => { state.motivation += 12; state.luck += 1; } },
-    { id: "lift", type: "good", name: "电梯今天居然没坏", icon: "🛗", copy: "本月时间+15秒、动力+5", apply: () => { state.remainingSec += 15; state.motivation += 5; } },
+    { id: "lift", type: "good", name: "电梯今天居然没坏", icon: "🛗", copy: "动力+14", apply: () => { state.motivation += 14; } },
     { id: "powerbank", type: "good", name: "抽奖中了充电宝", icon: "🔋", copy: "钱包+$80。不是手机，但也行", apply: () => state.wallet += 80 },
     { id: "farewell", type: "good", name: "同事离职请客", icon: "🍰", copy: "动力+15、钱包+$30", apply: () => { state.motivation += 15; state.wallet += 30; } },
-    { id: "wifi", type: "good", name: "网速终于正常了", icon: "📶", copy: "本月时间+25秒", apply: () => state.remainingSec += 25 },
+    { id: "wifi", type: "good", name: "网速终于正常了", icon: "📶", copy: "动力+15", apply: () => state.motivation += 15 },
     { id: "slipper", type: "good", name: "拖鞋底居然没掉", icon: "🩴", copy: "本月走路速度+15%", apply: () => state.speedBonus += 0.15 },
     { id: "fixdeposit", type: "good", name: "翻到忘记的定存", icon: "🧾", copy: "银行+$200", apply: () => state.bank += 200 },
     { id: "aircon", type: "good", name: "冷气终于修好了", icon: "❄️", copy: "动力+14、本月睡觉多回5动力", apply: () => { state.motivation += 14; state.sleepBonus += 5; } },
 
-    { id: "jam", type: "bad", name: "塞车塞到怀疑人生", icon: "🚗", copy: "本月时间-25秒", apply: () => state.remainingSec -= 25 },
+    { id: "jam", type: "bad", name: "塞车塞到怀疑人生", icon: "🚗", copy: "动力-16", apply: () => state.motivation -= 16 },
     { id: "sock", type: "bad", name: "洗衣机吃掉一只袜子", icon: "🧦", copy: "幸运-3。另一只还在，但没用了", apply: () => state.luck -= 3 },
     { id: "databill", type: "bad", name: "流量账单超标", icon: "📵", copy: "产生$50命运债务", apply: () => state.debt += 50 },
     { id: "reno", type: "bad", name: "隔壁装修从早敲到晚", icon: "🔨", copy: "动力-12", apply: () => state.motivation -= 12 },
     { id: "puddle", type: "bad", name: "一脚踩进水坑", icon: "💦", copy: "动力-8、幸运-1", apply: () => { state.motivation -= 8; state.luck -= 1; } },
-    { id: "battery", type: "bad", name: "电动摩托没电了", icon: "🛵", copy: "本月时间-20秒", apply: () => state.remainingSec -= 20 },
+    { id: "battery", type: "bad", name: "电动摩托没电了", icon: "🛵", copy: "动力-13", apply: () => state.motivation -= 13 },
     { id: "rain", type: "bad", name: "出门前五分钟下大雨", icon: "🌧️", copy: "动力-10、幸运-2", apply: () => { state.motivation -= 10; state.luck -= 2; } },
     { id: "catplant", type: "bad", name: "猫把花盆推下楼", icon: "🐈", copy: "产生$40命运债务", apply: () => state.debt += 40 },
     { id: "annualfee", type: "bad", name: "信用卡年费扣了", icon: "💳", copy: "钱包-$90。你一直说要取消", apply: () => state.wallet -= 90 },
@@ -210,12 +237,12 @@
     { id: "drama", type: "choice", name: "追剧追到凌晨三点", icon: "📺", copy: "动力-15，但幸运+3。值得", apply: () => { state.motivation -= 15; state.luck += 3; } },
     { id: "moving", type: "choice", name: "帮邻居搬家", icon: "📦", copy: "钱包+$90，但动力-12", apply: () => { state.wallet += 90; state.motivation -= 12; } },
     { id: "expired", type: "choice", name: "面包过期一天而已", icon: "🍞", copy: "钱包+$40，但动力-6", apply: () => { state.wallet += 40; state.motivation -= 6; } },
-    { id: "resell", type: "choice", name: "二手平台卖掉旧手机", icon: "📲", copy: "钱包+$160，但本月时间-20秒", apply: () => { state.wallet += 160; state.remainingSec -= 20; } },
-    { id: "gym", type: "choice", name: "健身房免费试用", icon: "🏋️", copy: "动力+18，但本月时间-30秒", apply: () => { state.motivation += 18; state.remainingSec -= 30; } },
+    { id: "resell", type: "choice", name: "二手平台卖掉旧手机", icon: "📲", copy: "钱包+$160，但动力-13", apply: () => { state.wallet += 160; state.motivation -= 13; } },
+    { id: "gym", type: "choice", name: "健身房免费试用", icon: "🏋️", copy: "动力+18，但要先跑一趟，动力-30", apply: () => { state.motivation -= 12; } },
     { id: "remedy", type: "choice", name: "相信了网上的偏方", icon: "🌿", copy: "幸运+6，但动力-8", apply: () => { state.luck += 6; state.motivation -= 8; } },
     { id: "allnight", type: "choice", name: "通宵打了一整晚游戏", icon: "🎮", copy: "动力-18，但幸运+4", apply: () => { state.motivation -= 18; state.luck += 4; } },
     { id: "nightrun", type: "choice", name: "下班多跑几单", icon: "🚕", copy: "钱包+$140，但动力-14", apply: () => { state.wallet += 140; state.motivation -= 14; } },
-    { id: "livestream", type: "choice", name: "直播抽奖真的中了", icon: "🎁", copy: "钱包+$70，但看了三小时", apply: () => { state.wallet += 70; state.remainingSec -= 25; } },
+    { id: "livestream", type: "choice", name: "直播抽奖真的中了", icon: "🎁", copy: "钱包+$70，但看了三小时，动力-16", apply: () => { state.wallet += 70; state.motivation -= 16; } },
     { id: "covershift", type: "choice", name: "替同事顶一个班", icon: "⏰", copy: "钱包+$110，但动力-9", apply: () => { state.wallet += 110; state.motivation -= 9; } },
     { id: "charm", type: "choice", name: "买了个平安符", icon: "🧿", copy: "幸运+8，但钱包-$60", apply: () => { state.luck += 8; state.wallet -= 60; } },
     { id: "durian", type: "choice", name: "榴莲季节到了", icon: "🥭", copy: "动力+20，但钱包-$80", apply: () => { state.motivation += 20; state.wallet -= 80; } }
@@ -229,7 +256,7 @@
 
   const CATALOG = {
     "命运卡": FATE_CARDS,
-    "工作卡": [600, 700, 800, 900].map(v => ({ id: `salary-${v}`, name: `$${v}工作`, icon: "💼", copy: `完成数学题领取${money(v)}` })),
+    "工作卡": WORK_TIERS.map(tier => ({ id: tier.id, name: tier.name, icon: tier.icon, copy: tier.copy })),
     "兼职卡": PART_TIME,
     "工具卡": TEMP_TOOLS,
     "食物卡": FOODS,
@@ -282,11 +309,16 @@
       bank: 0,
       debt: 0,
       missedRentStreak: 0,
-      motivation: 60,
+      motivation: ENERGY.monthStart,
+      energySpent: 0,
+      walkCarry: 0,
+      mealsEaten: 0,
+      workDone: 0,
+      sleptLastMonth: true,
+      pendingEnergyPenalty: 0,
       luck: 50,
       monthLuckBonus: 0,
       houseId,
-      remainingSec: 300,
       bankRate: 0.05,
       rentDiscount: 0,
       speedBonus: 0,
@@ -327,15 +359,6 @@
     return "超幸运";
   }
 
-  function monthDuration() {
-    const value = state.motivation;
-    if (value >= 90) return 340;
-    if (value >= 80) return 320;
-    if (value >= 50) return 300;
-    if (value >= 30) return 240;
-    if (value >= 10) return 180;
-    return 120;
-  }
 
   function showToast(message) {
     const toast = $("#toast");
@@ -370,7 +393,7 @@
   // modal opened, so the "抽卡" was really just a receipt. Here the player sees backs,
   // picks one blind, watches it flip, and then sees the ones they dodged -- the near
   // miss is most of the fun, so it is shown rather than thrown away.
-  function runCardDraw({ eyebrow, title, hint, candidates, faceUp, missed, confirmLabel, onConfirm, stingFor }) {
+  function runCardDraw({ eyebrow, title, hint, candidates, faceUp, confirmLabel, onConfirm, stingFor }) {
     const backs = candidates.map((_, index) =>
       `<button class="card-back" data-slot="${index}" style="animation-delay:${index * 90}ms" aria-label="翻开第${index + 1}张">
         <span class="card-back-inner"><span class="card-back-mark">月底</span><span class="card-back-q">?</span></span>
@@ -394,11 +417,8 @@
       $$("#draw-row .card-back").forEach(other => other.classList.add(other === button ? "flip-out" : "fade-out"));
 
       setTimeout(() => {
-        const others = candidates.filter((_, i) => i !== index);
         $("#draw-row").outerHTML = `<div class="reveal-wrap">
           <div class="reveal-card flip-in">${faceUp(picked)}</div>
-          ${others.length ? `<p class="dodged-label">差点抽到</p>
-            <div class="dodged-row">${others.map(missed).join("")}</div>` : ""}
         </div>
         <button id="draw-confirm" class="pixel-btn primary full-button">${confirmLabel}</button>`;
         const sting = stingFor ? stingFor(picked) : 660;
@@ -442,10 +462,11 @@
     openModal(`<p class="eyebrow">房东的新手教学</p>
       <h2>欢迎来到月底小镇</h2>
       <div class="result-box">
-        <p><strong>① 去公司：</strong>三张工作卡选一张，回答一道数学题。</p>
-        <p><strong>② 去食堂：</strong>每月必须吃一次，不然动力−20。</p>
-        <p><strong>③ 去银行：</strong>房租只会从银行自动扣，记得存钱。</p>
-        <p><strong>④ 回家睡觉：</strong>睡觉会结束本月并恢复动力。时间归零就没有睡眠奖励。</p>
+        <p><strong>动力就是你的一天。</strong>每月${ENERGY.monthStart}点，走路、上班、投资都要扣。没有倒计时，慢慢想没关系。</p>
+        <p><strong>① 去公司：</strong>简单／普通／困难三选一。越难越赚，动力扣得越多，数学题也越难。可以做很多次，但加班费会越来越少。</p>
+        <p><strong>② 去食堂：</strong>吃饭补回动力，可以吃很多次，但越吃补得越少。</p>
+        <p><strong>③ 去银行：</strong>房租只从银行扣，记得存钱。</p>
+        <p><strong>④ 回家睡觉：</strong>睡了下个月动力才回满${ENERGY.monthStart}。<strong>动力归零会当场倒在外面</strong>，下个月只剩${ENERGY.monthStart - ENERGY.noSleepPenalty}。</p>
       </div>
       <p>WASD或方向键走路，靠近门口按E进入。手机使用屏幕按钮。</p>
       <button id="tutorial-start" class="pixel-btn primary">懂了，抽第一张命运卡</button>`, { closable: false });
@@ -457,7 +478,14 @@
   }
 
   function resetMonthlyState() {
-    state.remainingSec = monthDuration();
+    state.motivation = ENERGY.monthStart
+      - (state.sleptLastMonth ? 0 : ENERGY.noSleepPenalty)
+      - (state.pendingEnergyPenalty || 0);
+    state.pendingEnergyPenalty = 0;
+    state.energySpent = 0;
+    state.walkCarry = 0;
+    state.mealsEaten = 0;
+    state.workDone = 0;
     state.bankRate = 0.05;
     state.rentDiscount = 0;
     state.monthLuckBonus = 0;
@@ -518,16 +546,14 @@
       hint: "三张背面朝上。选中的那张就是你这个月要过的日子。",
       candidates,
       faceUp: card => cardMarkup(card, card.type, "本月命运", `fate:${card.id}`),
-      missed: card => cardMarkup(card, card.type, "", `fate:${card.id}`),
       stingFor: card => card.type === "good" ? 880 : card.type === "bad" ? 220 : 620,
       confirmLabel: "接受命运，开始本月",
       onConfirm: card => {
         state.lastFateId = card.id;
         collect("命运卡", card.id);
         card.apply();
-        state.motivation = clamp(state.motivation, 0, 100);
+        state.motivation = Math.max(0, state.motivation);
         state.luck = clamp(state.luck, 0, 100);
-        state.remainingSec = Math.max(30, state.remainingSec);
         state.monthLog.push({ label: `命运：${card.name}`, text: card.copy });
         playing = true;
         closeModal();
@@ -568,9 +594,8 @@
     $("#motivation-label").textContent = Math.round(state.motivation);
     const luck = effectiveLuck();
     $("#luck-label").textContent = `${luck} · ${luckLabel(luck)}`;
-    $("#timer-label").textContent = formatTime(state.remainingSec);
-    const phase = state.remainingSec > 200 ? "白天" : state.remainingSec > 100 ? "黄昏" : "夜晚";
-    $("#day-phase").textContent = phase;
+    $("#timer-label").textContent = PHASE_LABELS[dayPhase()];
+    $("#day-phase").textContent = "时间";
     // Rent is taken from the bank, so falling short matters - but the old banner sat
     // over the map and covered the building labels. Mark the bank tile instead.
     const rent = currentRent();
@@ -590,6 +615,40 @@
     element.textContent = `${done ? "✓" : "□"} ${id === "work" ? "工作" : id === "food" ? "吃饭" : id === "fun" ? "娱乐" : "ROI"}`;
   }
 
+  // Phase comes from cumulative spend, so it only ever moves forward. Eating or using
+  // a tool buys you more energy, not an earlier hour.
+  function dayPhase() {
+    if (!state) return "morning";
+    if (state.energySpent >= ENERGY.nightAt) return "night";
+    if (state.energySpent >= ENERGY.afternoonAt) return "afternoon";
+    return "morning";
+  }
+
+  const PHASE_LABELS = { morning: "早上", afternoon: "下午", night: "晚上" };
+
+  // Returns false when the player ran out and the month ended under them, so callers
+  // can stop before charging money for something that no longer happens.
+  function spendEnergy(amount) {
+    if (!state || amount <= 0) return true;
+    state.motivation -= amount;
+    state.energySpent += amount;
+    if (state.motivation <= 0) {
+      state.motivation = 0;
+      updateHUD();
+      collapseFromExhaustion();
+      return false;
+    }
+    updateHUD();
+    return true;
+  }
+
+  function collapseFromExhaustion() {
+    if (!playing) return;
+    closeModal();
+    showToast("动力见底，你就地倒下了");
+    endMonth(false);
+  }
+
   function formatTime(seconds) {
     const whole = Math.max(0, Math.ceil(seconds));
     return `${String(Math.floor(whole / 60)).padStart(2, "0")}:${String(whole % 60).padStart(2, "0")}`;
@@ -600,10 +659,6 @@
     return Math.round(house.rent * (1 - state.rentDiscount));
   }
 
-  function spendTime(seconds) {
-    state.remainingSec = Math.max(0, state.remainingSec - seconds);
-    updateHUD();
-  }
 
   function combinedFunds() { return state.wallet + state.bank; }
 
@@ -675,9 +730,19 @@
     const vy = dy * scale * speed * delta;
     const nextX = clamp(state.player.x + vx, 14, 946);
     const nextY = clamp(state.player.y + vy, 18, 520);
+    const fromX = state.player.x, fromY = state.player.y;
     if (!isBlocked(nextX, state.player.y)) state.player.x = nextX;
     if (!isBlocked(state.player.x, nextY)) state.player.y = nextY;
     state.player.moving = length > 0.08;
+
+    // Charge for ground actually covered, so walking into a wall is free.
+    state.walkCarry += Math.hypot(state.player.x - fromX, state.player.y - fromY);
+    if (state.walkCarry >= ENERGY.pixelsPerPoint) {
+      const points = Math.floor(state.walkCarry / ENERGY.pixelsPerPoint);
+      state.walkCarry -= points * ENERGY.pixelsPerPoint;
+      if (!spendEnergy(points)) return;
+    }
+
     if (Math.abs(dx) > Math.abs(dy)) state.player.facing = dx > 0 ? "right" : "left";
     else if (dy) state.player.facing = dy > 0 ? "down" : "up";
   }
@@ -730,55 +795,75 @@
   }
 
   function showWork() {
-    if (state.flags.work) { simpleMessage("今天真的下班了", "本月主工作已经完成。老板假装没看见你又回来。", "💼"); return; }
-    const luck = effectiveLuck();
-    const pool = luck >= 75 ? [700, 800, 800, 900] : luck >= 50 ? [600, 700, 800, 900] : luck >= 25 ? [600, 600, 700, 800] : [600, 600, 600, 700];
-    const salaries = Array.from({ length: 3 }, () => random(pool));
-    const cost = { 600: 0, 700: 3, 800: 6, 900: 10 };
-    openModal(`<p class="eyebrow">摸鱼有限公司</p><h2>本月工作三选一</h2>
-      <p class="modal-intro">工资越高，工作越累。选择后回答一道数学题，答错工资减少20%。</p>
-      <div class="card-grid">${salaries.map((salary, index) => cardMarkup({ id: String(index), icon: "💼", name: `${money(salary)}工作`, copy: `完成消耗30秒，动力-${cost[salary]}` }, "choice work-card", `工资 ${money(salary)}`, `work:${salary}`)).join("")}</div>`);
-    $$(".game-card").forEach((button, index) => button.addEventListener("click", () => startMathQuestion(salaries[index], cost[salaries[index]])));
+    const done = state.workDone;
+    const rate = ENERGY.workFalloff[Math.min(done, ENERGY.workFalloff.length - 1)];
+    openModal(`<p class="eyebrow">摸鱼有限公司</p><h2>今天做哪一种活？</h2>
+      <p class="modal-intro">越难的活越赚，但动力扣得越狠。答错数学题工资减20%。</p>
+      <div class="status-strip">
+        <span class="status-chip">动力 ${Math.round(state.motivation)}</span>
+        <span class="status-chip">本月已做 ${done} 次</span>
+        ${done ? `<span class="status-chip warn">加班费只剩 ${Math.round(rate * 100)}%</span>` : ""}
+      </div>
+      <div class="card-grid">${WORK_TIERS.map(tier => {
+        const pay = Math.round(tier.pay * rate);
+        const tooTired = state.motivation <= tier.energy;
+        return cardMarkup(
+          { id: tier.id, icon: tier.icon, name: tier.name, copy: tooTired ? "动力不够，做不动了" : tier.copy },
+          tooTired ? "unaffordable work-card" : "choice work-card",
+          `动力-${tier.energy} · 工资 ${money(pay)}`,
+          `work:${tier.id}`);
+      }).join("")}</div>`);
+    $$(".game-card").forEach(button => button.addEventListener("click", () => {
+      const tier = WORK_TIERS.find(item => item.id === button.dataset.cardId);
+      if (state.motivation <= tier.energy) { showToast("动力不够做这份活"); return; }
+      startMathQuestion(tier, Math.round(tier.pay * rate));
+    }));
   }
 
-  function makeMathQuestion() {
+  // `span` comes from the work tier, so the harder the shift the bigger the numbers.
+  function makeMathQuestion(span = 25) {
+    const big = Math.max(6, Math.round(span * 2.4));
+    const small = Math.max(3, Math.round(span * 0.5));
     const kind = Math.floor(Math.random() * 5);
     let prompt, answer;
-    if (kind === 0) { const a = 20 + Math.floor(Math.random() * 60), b = 10 + Math.floor(Math.random() * 40); prompt = `${a} + ${b} = ?`; answer = a + b; }
-    else if (kind === 1) { const a = 70 + Math.floor(Math.random() * 80), b = 10 + Math.floor(Math.random() * 50); prompt = `${a} − ${b} = ?`; answer = a - b; }
-    else if (kind === 2) { const a = 3 + Math.floor(Math.random() * 9), b = 4 + Math.floor(Math.random() * 8); prompt = `${a} × ${b} = ?`; answer = a * b; }
-    else if (kind === 3) { const base = random([40, 60, 80, 100, 120, 200]), percent = random([10, 20, 25, 50]); prompt = `${percent}% × $${base} = ?`; answer = base * percent / 100; }
-    else { const base = random([80, 100, 120, 200]), percent = random([10, 20, 25, 50]); prompt = `$${base}打${100 - percent}%折，售价是？`; answer = base * (100 - percent) / 100; }
+    if (kind === 0) { const a = small + Math.floor(Math.random() * big), b = small + Math.floor(Math.random() * big); prompt = `${a} + ${b} = ?`; answer = a + b; }
+    else if (kind === 1) { const a = big + Math.floor(Math.random() * big), b = small + Math.floor(Math.random() * big); prompt = `${a} − ${b} = ?`; answer = a - b; }
+    else if (kind === 2) { const a = 3 + Math.floor(Math.random() * Math.max(4, span / 3)), b = 4 + Math.floor(Math.random() * Math.max(4, span / 4)); prompt = `${a} × ${b} = ?`; answer = a * b; }
+    else if (kind === 3) { const base = random(span > 30 ? [120, 160, 240, 320] : span > 18 ? [40, 60, 80, 100, 120, 200] : [20, 40, 60, 80]), percent = random(span > 30 ? [15, 35, 45] : [10, 20, 25, 50]); prompt = `${percent}% × $${base} = ?`; answer = base * percent / 100; }
+    else { const base = random(span > 30 ? [160, 240, 320] : [80, 100, 120, 200]), percent = random(span > 30 ? [15, 35] : [10, 20, 25, 50]); prompt = `$${base}打${100 - percent}%折，售价是？`; answer = base * (100 - percent) / 100; }
+    const spread = Math.max(4, Math.round(span * 0.8));
     const wrong = new Set();
     while (wrong.size < 2) {
-      const value = Math.max(1, Math.round(answer + random([-20, -10, -5, 5, 10, 20])));
+      const value = Math.max(1, Math.round(answer + random([-spread, -spread / 2, spread / 2, spread])));
       if (value !== answer) wrong.add(value);
     }
     return { prompt, answer, options: shuffle([answer, ...wrong]) };
   }
 
-  function startMathQuestion(salary, motivationCost) {
-    collect("工作卡", `salary-${salary}`);
-    const question = makeMathQuestion();
-    openModal(`<p class="eyebrow">本月唯一一道工作题</p><h2>答对就拿完整工资</h2>
+  function startMathQuestion(tier, pay) {
+    collect("工作卡", tier.id);
+    const question = makeMathQuestion(tier.span);
+    openModal(`<p class="eyebrow">${tier.name} · 动力-${tier.energy}</p><h2>答对就拿完整工资</h2>
       <div class="math-question">${question.prompt}</div>
       <div class="answer-grid">${question.options.map(value => `<button class="pixel-btn" data-answer="${value}">${money(value)}</button>`).join("")}</div>`, { closable: false });
     $$('[data-answer]').forEach(button => button.addEventListener("click", () => {
       const correct = Number(button.dataset.answer) === question.answer;
       let protectedByTool = false;
       if (!correct && state.mathShield) { state.mathShield = false; protectedByTool = true; }
-      const paid = (!correct && !protectedByTool) ? Math.round(salary * 0.8) : salary;
+      const paid = (!correct && !protectedByTool) ? Math.round(pay * 0.8) : pay;
       state.wallet += paid;
-      state.motivation = clamp(state.motivation - motivationCost, 0, 100);
+      state.workDone += 1;
       state.flags.work = true;
-      state.monthLog.push({ label: "主工作工资", amount: paid, positive: true });
-      spendTime(30);
+      state.monthLog.push({ label: `${tier.name}工资`, amount: paid, positive: true });
       beep(correct || protectedByTool ? 760 : 180, 0.13, correct ? "square" : "sawtooth", 0.04);
       openModal(`<p class="eyebrow">打卡完成</p><h2>${correct ? "算得漂亮！" : protectedByTool ? "计算器救了你" : "老板抓到机会扣钱了"}</h2>
-        <div class="result-box">正确答案：${money(question.answer)}<br>本月工资：<strong>${money(paid)}</strong><br>动力：-${motivationCost}</div>
+        <div class="result-box">正确答案：${money(question.answer)}<br>到手工资：<strong>${money(paid)}</strong><br>动力：-${tier.energy}</div>
         <button id="work-done" class="pixel-btn primary">收工</button>`, { closable: false });
       $("#work-done").addEventListener("click", closeModal);
       updateHUD();
+      // Charged last so that if this shift empties the tank, the month ends over the
+      // top of the payslip and the player still keeps what they just earned.
+      spendEnergy(tier.energy);
     }));
   }
 
@@ -797,14 +882,13 @@
         ${cardMarkup(job, "choice", `工资 ${money(job.pay)}`, `parttime:${job.id}`)}
         ${cardMarkup(tool, "good", "附赠工具", `tool:${tool.id}`)}
       </div>`,
-      missed: ({ job }) => cardMarkup(job, "choice", "", `parttime:${job.id}`),
       stingFor: ({ job }) => job.pay >= 160 ? 880 : job.pay >= 120 ? 620 : 380,
       confirmLabel: "接下这份工",
       onConfirm: ({ job, tool }) => {
         collect("兼职卡", job.id);
         collect("工具卡", tool.id);
         state.wallet += job.pay;
-        spendTime(20);
+        spendEnergy(ENERGY.partTime);
         if (state.tempTools.length < 3) state.tempTools.push(tool.id);
         else showToast("临时工具栏已满，新工具没地方放");
         state.monthLog.push({ label: `兼职：${job.name}`, amount: job.pay, positive: true });
@@ -824,11 +908,20 @@
   }
 
   function showFood() {
-    if (state.flags.food) { simpleMessage("已经吃过了", "一个月只能抽一次食物。再吃下去钱包会先撑不住。", "🍜"); return; }
     const cost = state.freeFood ? 0 : 70;
     if (state.wallet < cost) { simpleMessage("钱包不够", `吃饭需要${money(cost)}现金。银行有钱也要先去提款。`, "👛"); return; }
+    const rate = ENERGY.mealFalloff[Math.min(state.mealsEaten, ENERGY.mealFalloff.length - 1)];
+    if (rate <= 0.1 && state.mealsEaten >= ENERGY.mealFalloff.length - 1) {
+      simpleMessage("真的吃不下了", "你看着那碗饭，它也看着你。这个月再吃也补不回多少动力了。", "🍚");
+      return;
+    }
     openModal(`<p class="eyebrow">月底食堂</p><h2>今天吃什么？</h2>
-      <p>支付${money(cost)}后随机抽一道食物。每月只能吃一次。</p>
+      <p>支付${money(cost)}抽一道菜，补回动力。吃得越多，能补的越少。</p>
+      <div class="status-strip">
+        <span class="status-chip">动力 ${Math.round(state.motivation)}</span>
+        <span class="status-chip">本月第 ${state.mealsEaten + 1} 餐</span>
+        <span class="status-chip${rate < 1 ? " warn" : ""}">回复效果 ${Math.round(rate * 100)}%</span>
+      </div>
       <button id="draw-food" class="pixel-btn primary">${cost ? `支付${money(cost)}并抽卡` : "使用免费餐券抽卡"}</button>`);
     $("#draw-food").addEventListener("click", () => {
       state.wallet -= cost;
@@ -840,29 +933,31 @@
         hint: "老板把三张菜牌反扣在桌上。翻哪张就吃哪张。",
         candidates,
         faceUp: food => cardMarkup(food, "good", "本月一次", `food:${food.id}`),
-        missed: food => cardMarkup(food, "good", "", `food:${food.id}`),
         stingFor: food => food.motivation >= 12 ? 880 : food.motivation >= 6 ? 620 : 300,
         confirmLabel: "吃饱了",
         onConfirm: food => {
           collect("食物卡", food.id);
-          state.motivation = clamp(state.motivation + food.motivation, 0, 100);
+          const gained = Math.round(food.motivation * rate);
+          state.motivation += gained;
           state.luck = clamp(state.luck + (food.luck || 0), 0, 100);
           state.wallet += food.refund || 0;
+          state.mealsEaten += 1;
           state.flags.food = true;
-          spendTime(10);
           state.monthLog.push({ label: `食物：${food.name}`, amount: -(cost - (food.refund || 0)), positive: false });
           closeModal();
           updateHUD();
-          showToast(`吃了${food.name}，${food.effect}`);
+          showToast(`吃了${food.name}，动力+${gained}`);
         }
       });
     });
   }
 
   function showFun() {
-    if (state.flags.fun) { simpleMessage("快乐额度用完", "一个月只能娱乐一次。剩下的快乐请留到下个月。", "🕹️"); return; }
     if (state.wallet < 50) { simpleMessage("钱包不允许快乐", "娱乐需要$50现金。", "👛"); return; }
-    openModal(`<p class="eyebrow">开心一下</p><h2>花$50抽一次快乐</h2><p>最差也会恢复一点动力。</p><button id="draw-fun" class="pixel-btn primary">支付$50并抽卡</button>`);
+    openModal(`<p class="eyebrow">开心一下</p><h2>花$50抽一次快乐</h2>
+      <p>玩一次补回一点动力。最差也不会亏动力。</p>
+      <div class="status-strip"><span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
+      <button id="draw-fun" class="pixel-btn primary">支付$50并抽卡</button>`);
     $("#draw-fun").addEventListener("click", () => {
       state.wallet -= 50;
       const candidates = [weightedOutcome(FUN_CARDS), weightedOutcome(FUN_CARDS), weightedOutcome(FUN_CARDS)];
@@ -872,16 +967,14 @@
         hint: "三个计划反扣着。翻开哪个就去做哪个，不准反悔。",
         candidates,
         faceUp: fun => cardMarkup(fun, "choice", "本月一次", `fun:${fun.id}`),
-        missed: fun => cardMarkup(fun, "choice", "", `fun:${fun.id}`),
         stingFor: fun => fun.motivation >= 12 ? 880 : fun.motivation >= 5 ? 620 : 300,
         confirmLabel: "心情好多了",
         onConfirm: fun => {
           collect("娱乐卡", fun.id);
-          state.motivation = clamp(state.motivation + fun.motivation, 0, 100);
+          state.motivation += fun.motivation;
           state.luck = clamp(state.luck + (fun.luck || 0), 0, 100);
           state.wallet += (fun.cash || 0) + (fun.refund || 0);
           state.flags.fun = true;
-          spendTime(15);
           state.monthLog.push({ label: `娱乐：${fun.name}`, amount: -50 + (fun.cash || 0) + (fun.refund || 0), positive: false });
           closeModal();
           updateHUD();
@@ -917,7 +1010,7 @@
       if (!paid) { showToast("银行余额不足，或目前没有债务"); return; }
       state.bank -= paid; state.debt -= paid;
     }
-    spendTime(5);
+    spendEnergy(ENERGY.bank);
     updateHUD();
     showBank();
   }
@@ -931,7 +1024,7 @@
     state.stockOffers.forEach(id => collect("股票卡", id));
     const offers = state.stockOffers.map(id => STOCKS.find(item => item.id === id));
     const holdings = Object.entries(state.holdings).filter(([, holding]) => holding.qty > 0);
-    openModal(`<p class="eyebrow">涨跌交易所</p><h2>本月发现的三只股票</h2>
+    openModal(`<p class="eyebrow">涨跌交易所</p><h2>本月发现的三只股票</h2><div class="status-strip"><span class="status-chip">买卖一次 动力-${ENERGY.stock}</span><span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
       <p class="modal-intro">本月只能购买其中一种，最多10股；已有股票随时可以卖。买卖没有手续费，每次操作消耗8秒。</p>
       <div class="card-grid">${offers.map(item => {
         const price = state.stockPrices[item.id];
@@ -964,7 +1057,7 @@
       const old = state.holdings[id] || { qty: 0, avg: 0 };
       state.holdings[id] = { qty: old.qty + qty, avg: Math.round((old.avg * old.qty + cost) / (old.qty + qty)) };
       state.flags.stockBought = true;
-      spendTime(8);
+      spendEnergy(ENERGY.stock);
       state.monthLog.push({ label: `买入${stock.name}`, amount: -cost, positive: false });
       closeModal(); updateHUD(); showToast(`买入${qty}股${stock.name}`);
     });
@@ -977,7 +1070,7 @@
     const stock = STOCKS.find(item => item.id === id), price = state.stockPrices[id].price;
     holding.qty -= 1;
     state.wallet += price;
-    spendTime(8);
+    spendEnergy(ENERGY.stock);
     state.monthLog.push({ label: `卖出${stock.name}1股`, amount: price, positive: true });
     updateHUD();
     showStock();
@@ -985,7 +1078,7 @@
 
   function showROI() {
     if (state.flags.roi) { simpleMessage("本月已经投过了", "投资需要一点耐心。下个月钱会自动进入银行。", "🎯"); return; }
-    openModal(`<p class="eyebrow">回报研究所</p><h2>选择风险，再抽回报</h2>
+    openModal(`<p class="eyebrow">回报研究所</p><h2>选择风险，再抽回报</h2><div class="status-strip"><span class="status-chip">投资一次 动力-${ENERGY.roi}</span><span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
       <p class="modal-intro">投入的钱会锁定一个月，下个月自动进入银行。不会损失全部本金。</p>
       <div class="card-grid">${ROI_TYPES.map(type => cardMarkup(type, type.color, `${type.min}% ～ +${type.max}%`, `roi:${type.id}`)).join("")}</div>`);
     $$('.game-card').forEach(button => button.addEventListener("click", () => chooseROIAmount(button.dataset.cardId)));
@@ -1009,7 +1102,7 @@
     state.pendingROI.push({ dueMonth: state.month + 1, amount, payout, rate, name: type.name });
     state.flags.roi = true;
     collect("ROI卡", type.id);
-    spendTime(10);
+    spendEnergy(ENERGY.roi);
     state.monthLog.push({ label: `投入${type.name}`, amount: -amount, positive: false });
     openModal(`<p class="eyebrow">ROI抽卡结果</p><h2>${rate >= 0 ? "项目看起来不错" : "好像有点不妙"}</h2>
       <div class="result-box">投入：${money(amount)}<br>抽到回报：<strong class="${rate >= 0 ? "positive" : "negative"}">${rate >= 0 ? "+" : ""}${rate}%</strong><br>下个月进入银行：<strong>${money(payout)}</strong></div>
@@ -1020,7 +1113,7 @@
 
   function showShop() {
     const offers = state.shopOffers.map(id => LUCK_ITEMS.find(item => item.id === id));
-    openModal(`<p class="eyebrow">包好运杂货铺</p><h2>老板说：不灵不退款</h2>
+    openModal(`<p class="eyebrow">包好运杂货铺</p><h2>老板说：不灵不退款</h2><div class="status-strip"><span class="status-chip">买一件 动力-${ENERGY.shop}</span></div>
       <p class="modal-intro">永久物品占用三格背包；药水只在本月生效。商品只能用钱包现金购买。</p>
       <div class="status-strip">
         <span class="status-chip">钱包 ${money(state.wallet)}</span>
@@ -1045,7 +1138,7 @@
     if (item.temporary) state.monthLuckBonus += item.luck;
     else state.permanentItems.push(item.id);
     collect("幸运物品", item.id);
-    spendTime(5);
+    spendEnergy(ENERGY.shop);
     updateHUD();
     showShop();
     showToast(`买到${item.name}`);
@@ -1054,7 +1147,7 @@
   function showHome() {
     const house = HOUSES.find(item => item.id === state.houseId);
     openModal(`<p class="eyebrow">${house.name}</p><h2>要睡觉了吗？</h2>
-      <p>睡觉会立即结束第${state.month}月，恢复${house.sleep + state.sleepBonus}动力。还剩<strong>${formatTime(state.remainingSec)}</strong>。</p>
+      <p>现在是${PHASE_LABELS[dayPhase()]}，你还剩<strong>${Math.round(state.motivation)}</strong>动力。睡觉会结束第${state.month}月，下个月动力回满${ENERGY.monthStart}。</p>
       <div class="button-row"><button id="sleep-btn" class="pixel-btn primary">睡觉，结束本月</button><button id="not-yet-btn" class="pixel-btn ghost">还没，我再出去一下</button></div>`);
     $("#sleep-btn").addEventListener("click", () => { closeModal(); endMonth(true); });
     $("#not-yet-btn").addEventListener("click", closeModal);
@@ -1113,18 +1206,17 @@
     const house = HOUSES.find(item => item.id === state.houseId);
     const report = [...state.monthLog];
 
+    // Sleeping is what resets you properly; collapsing outdoors carries into next month.
+    state.sleptLastMonth = !!slept;
     if (slept) {
-      const gain = house.sleep + state.sleepBonus;
-      state.motivation = clamp(state.motivation + gain, 0, 100);
-      report.push({ label: "回家睡觉", text: `动力+${gain}` });
+      report.push({ label: "回家睡觉", text: `下个月动力回满 ${ENERGY.monthStart}` });
     } else {
-      state.motivation = clamp(state.motivation - 10, 0, 100);
-      report.push({ label: "时间归零没睡觉", text: "动力-10" });
+      report.push({ label: "没回家睡觉", text: `下个月开局只有 ${ENERGY.monthStart - ENERGY.noSleepPenalty} 动力` });
     }
-    if (!state.flags.food) {
-      state.motivation = clamp(state.motivation - 20, 0, 100);
-      report.push({ label: "本月忘了吃饭", text: "动力-20" });
-    }
+    // Deducting here would hit an energy pool that is usually already spent, so bank
+    // the penalty and take it out of next month's opening balance instead.
+    state.pendingEnergyPenalty = state.flags.food ? 0 : 10;
+    if (state.pendingEnergyPenalty) report.push({ label: "本月一餐都没吃", text: `下个月开局再扣 ${state.pendingEnergyPenalty} 动力` });
 
     const rent = currentRent();
     if (state.bank >= rent) {
@@ -1206,8 +1298,7 @@
   const COLLECTION_ART_PREFIXES = { "命运卡": "fate", "工作卡": "work", "兼职卡": "parttime", "工具卡": "tool", "食物卡": "food", "娱乐卡": "fun", "股票卡": "stock", "ROI卡": "roi", "幸运物品": "luck" };
 
   function collectionArtKey(category, item) {
-    const rawId = category === "工作卡" ? item.id.replace("salary-", "") : item.id;
-    return `${COLLECTION_ART_PREFIXES[category]}:${rawId}`;
+    return `${COLLECTION_ART_PREFIXES[category]}:${item.id}`;
   }
 
   function collectionCardClass(category, item) {
@@ -1270,7 +1361,7 @@
   }
 
   function drawTown() {
-    const phase = state.remainingSec > 200 ? "day" : state.remainingSec > 100 ? "sunset" : "night";
+    const phase = dayPhase() === "morning" ? "day" : dayPhase() === "afternoon" ? "sunset" : "night";
     const useArt = ART.town.complete && ART.town.naturalWidth;
     if (useArt) {
       drawCover(ART.town, 0, 0, ART.town.naturalWidth, ART.town.naturalHeight, 0, 0, 960, 540);
@@ -1490,8 +1581,6 @@
       movementVelocity.x += (dx - movementVelocity.x) * smoothing;
       movementVelocity.y += (dy - movementVelocity.y) * smoothing;
       movePlayer(movementVelocity.x, movementVelocity.y, delta);
-      state.remainingSec -= delta;
-      if (state.remainingSec <= 0) { state.remainingSec = 0; endMonth(false); }
       updateHUD();
     } else if (state) {
       state.player.moving = false;
@@ -1545,7 +1634,7 @@
     let index = 0;
     musicTimer = setInterval(() => {
       if (!paused && playing) {
-        const phaseBoost = state.remainingSec < 100 ? 1.18 : state.remainingSec < 200 ? 1.08 : 1;
+        const phaseBoost = dayPhase() === "night" ? 1.18 : dayPhase() === "afternoon" ? 1.08 : 1;
         beep(notes[index++ % notes.length] * phaseBoost, .09, "square", .009);
       }
     }, 520);

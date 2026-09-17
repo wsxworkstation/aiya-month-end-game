@@ -159,7 +159,6 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
 .interaction-hint { z-index: 11; bottom: 8px; min-height: 30px; padding: 3px 11px; background: var(--yellow); font-size: 11px; white-space: nowrap; }
 @keyframes bob { 50% { transform: translate(-50%, -4px); } }
 
-.rent-warning { position: fixed; z-index: 25; top: 80px; left: 50%; transform: translateX(-50%); padding: 7px 14px; background: #ff6b6b; color: #fff; border: 3px solid var(--ink); font-weight: 900; }
 /* Above .modal-layer: buying, selling and depositing all happen inside a modal, so a
    toast underneath it is invisible exactly when it matters most. */
 .toast { position: fixed; z-index: 120; left: 50%; top: 126px; transform: translate(-50%, -20px); padding: 12px 20px; background: var(--ink); color: #fff; border: 3px solid #fff; box-shadow: 0 4px 0 rgba(0,0,0,.35); font-weight: 900; font-size: 16px; opacity: 0; pointer-events: none; transition: .18s; }
@@ -303,7 +302,6 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
   .mobile-controls { display: flex; bottom: max(12px, env(safe-area-inset-bottom)); left: 10px; right: 10px; }
   .interaction-hint { display: none !important; }
   .month-checklist { top: 118px; right: 7px; bottom: auto; min-width: 0; padding: 7px; gap: 3px; font-size: 10px; opacity: .92; }
-  .rent-warning { top: 112px; max-width: calc(100vw - 110px); font-size: 11px; text-align: center; }
   .toast { top: 118px; max-width: calc(100vw - 24px); text-align: center; }
   .card-grid { grid-template-columns: repeat(3, minmax(165px, 58vw)); justify-content: start; gap: 14px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; padding: 8px 10px 16px; margin-left: -10px; margin-right: -10px; }
   .inventory-grid { grid-template-columns: 1fr; }
@@ -449,6 +447,16 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
   /* At this size the footer's divider rule lands on top of the effect text; the meta
      line ("本月命运" etc.) is decorative, so drop it and give the copy the room. */
   .reveal-card .card-meta { display: none; }
+  /* Short screens leave the card ~200px tall, and the longest effect lines ("钱包+$60。
+     上个月的你留给现在的你") need two rows. Trade illustration height for text room
+     rather than shrinking type below the 10px floor. */
+  /* The 4:5 ratio fixes the height from the width, so a long effect line simply has
+     nowhere to go and spills out of the frame. On a 390px-tall screen let the revealed
+     card grow to fit its text instead. */
+  .reveal-card .game-card { aspect-ratio: auto; min-height: 0; }
+  .reveal-card .card-art { flex: 0 0 auto; height: 58px; }
+  .reveal-card .card-title { font-size: 13px; line-height: 1.2; }
+  .reveal-card .card-copy { font-size: 10px; line-height: 1.3; }
   /* No room for the near-miss flourish or the blurb on a 390px-tall screen: keeping
      them pushes the confirm button below the fold. */
   .dodged-label, .dodged-row, .card-draw .draw-hint { display: none; }
@@ -481,3 +489,9 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
    redundant on a thumbnail -- an unlocked card is already visibly unlocked -- so drop
    it rather than shrinking every card's font. */
 .collection-card .card-meta { display: none; }
+
+/* Rent comes out of the bank; when it will not cover this month's rent the tile goes
+   red. This replaced a floating banner that covered the map's building labels. */
+.hud-stat.bank.short { border-color: rgba(255,120,120,.75); background: rgba(219,65,76,.22); }
+.hud-stat.bank.short strong { color: #ffb4b4; }
+.hud-stat.bank.short::before { background: #db414c; color: #fff; }

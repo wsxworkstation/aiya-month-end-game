@@ -267,6 +267,130 @@ infer it: a status strip (wallet / backpack slots used / current luck)
 and per-card states — `已拥有` for owned items, dimmed `钱不够` for ones
 you cannot afford.
 
+## Round 6: card variety and a real draw ceremony (Claude, 2026-09-17)
+
+User feedback: "卡牌的种类太少了 / 抽卡但是玩家没有抽卡的仪式 / 一开始游戏就已经
+打开牌 没有期待感 / 多点情景 多点搞笑的".
+
+### The draw had no draw in it
+
+Every pool rendered its result face-up the instant its modal opened, so "抽卡" was
+really a receipt. `runCardDraw()` (in `game.js`, just above `cardMarkup`) replaces
+that for fate, food, entertainment and the part-time board: three cards face down,
+the player picks one blind, it flips, and the two they *didn't* take are shown
+dimmed under "差点抽到" — the near miss is most of the fun, so it is displayed
+rather than discarded. The pick is genuine: all three candidates are drawn from the
+same luck-weighted pool up front, so choosing is real, just blind.
+
+The lucky shop deliberately still shows its three items face-up. It is a purchase
+screen, not a draw — you are spending money and must see what you are buying.
+
+### Content
+
+- `FATE_CARDS` 12 -> **48** (16 good / 16 bad / 16 choice)
+- `FOODS` 6 -> 14, `FUN_CARDS` 5 -> 12, `PART_TIME` 5 -> 12, `TEMP_TOOLS` 7 -> 12
+
+The original twelve fate ids are untouched — they own the illustrations in
+`card-art-main.png` and appear in players' saved collections. **New cards have no
+atlas cell and fall back to their emoji** inside the same frame, which reads fine
+but is visually distinct from the illustrated ones. If new art is ever generated,
+`card-art-main.png` is 6x6 and full; a third sheet plus a `CARD_ART` entry per id is
+the path, and the grid rules in `HANDOFF_TO_CLAUDE.md` still apply.
+
+All new effects reuse existing state fields (wallet/bank/debt/motivation/luck/
+remainingSec/rentDiscount/bankRate/speedBonus/sleepBonus/freeFood) — no new flags,
+so `resetMonthlyState()` and the checkpoint format did not change.
+
+### Layout fallout from longer names, and how it was caught
+
+Longer Chinese names broke two things that only showed up under measurement:
+
+1. **Collection thumbnails.** Nine-character titles wrap to two lines and pushed
+   content to 141px inside a 136px card, spilling `.card-meta` outside the frame.
+   Fixed by hiding `.card-meta` on `.collection-card` — the handoff already allows
+   thumbnails to omit body chrome, and an unlocked card is visibly unlocked without
+   a "已收集" footer. Not by shrinking fonts.
+2. **The revealed card on a 390px-tall screen.** `aspect-ratio: 4/5` derives height
+   from width, so a long effect line has nowhere to go and spills out of the frame.
+   Under `@media (max-height: 470px)` the revealed card drops the fixed ratio and
+   sizes to its text; that block also hides the blurb and the 差点抽到 row, which
+   otherwise push the confirm button below the fold.
+
+**Two QA traps worth repeating.** First, a card-layout check that opens the
+collection *without seeding* `aiyaMonthEndGame_collection_v1` renders 115 identical
+"尚未发现" placeholders and passes trivially — seed the keys, then assert
+`placeholders === 0` before trusting the result. Second, one sample is not enough:
+the revealed card is random, so the landscape overflow appeared in roughly three
+runs out of five. Loop the draw several times before calling it fixed.
+
+### Verified
+
+`node --check game.js`; `node scripts/check-layout.js` (100% coverage, all
+destinations reachable); all four draw points driven end to end in a browser (fate,
+food, entertainment, part-time — each showing 3 backs, 0 face-up, a flip, and the
+dodged pair); all **115** cards measured for clipping/spill/divider collision at
+1280x800, 390x844 and 844x390 — clean; the draw ceremony sampled six times at both
+phone sizes with no overflow and the confirm button on screen. No console errors.
+
+### Note on parallel edits
+
+`styles.css` was overwritten twice mid-session, losing the draw-ceremony block both
+times. It now lives **at the end of the file** so it survives the cascade. If the
+card backs ever render as small plain buttons, that block has been dropped again —
+check for `.card-back` in `styles.css` first.
+
+## Round 7: nameplate over the building you're standing at (Claude, 2026-09-17)
+
+User request: "到了一个地方 屋子上就跳出那个屋子的名字".
+
+`drawNameplate()` in `game.js` pops a yellow plate with a downward tail over the
+roof of whichever place `findNearbyTarget()` currently returns, easing up into
+position over ~190ms. It is drawn dead last in `drawTown()`, after the night tint
+and after the player, so it never gets dimmed or covered.
+
+Two things worth keeping:
+
+- **It is the only place label on small screens.** The street signposts are hidden
+  under 850px, so before this there was no on-map indication of what you had walked
+  up to — only the footer/`Click` affordance. Don't gate the nameplate behind the
+  same media query.
+- **The active building's street signpost is suppressed** (`!compactMobile && !near`
+  in `drawBuilding`/`drawBoard`), otherwise the name renders twice, once above the
+  roof and once in the street.
+
+The plate is clamped with `Math.max(target.topY - 18, height / 2 + 10)` so the
+top-row buildings (which start at y=8) keep it on canvas instead of drawing it off
+the top edge. The mobile camera pans the canvas *element* via CSS `left`, not a
+canvas transform, so world coordinates are correct on phones with no extra work.
+
+Verified: `node --check`, `node scripts/check-layout.js`, plate appears over 你的小窝
+and 月底食堂 and clears on walking away, at desktop and 390x844; card QA still clean
+across all 115 cards at three sizes; no console errors.
+
+## Round 8: rent banner removed, duplicate place names collapsed (Claude, 2026-09-17)
+
+User: "这个不用展示出来了 挡住了" about the red `银行余额不足以支付本月房租`
+banner, which was `position: fixed` at the top of the map and sat right on top of the
+稳稳银行 / 涨跌交易所 labels.
+
+The banner element, its CSS and the `#rent-warning` toggle are gone. The warning
+itself still matters — rent is deducted from the **bank**, not the wallet, and a
+shortfall turns into debt — so it moved into the HUD where it costs no space:
+`.hud-stat.bank` gets a `short` class (red border//icon/value) and `#bank-label`
+gets a title tooltip naming the amount. Don't reintroduce a floating banner.
+
+While verifying, the place name was rendering **three times** at once: Codex's top
+location chip mirrored `nearbyTarget.label`, the new roof nameplate showed it, and
+the footer hint showed `E · name`. The chip now stays on `月底小镇` outdoors and
+hides entirely while a nameplate is up; indoors it still names the room (there is no
+roof to hang a plate on in an interior). The chip element and its styling are
+otherwise untouched.
+
+Verified at desktop and 390x844: banner absent from the DOM, bank tile flags the
+shortfall, chip hides at a building and returns to 月底小镇 when you walk off, names
+the room indoors. `node --check`, `check-layout`, the fate draw, the 115-card layout
+QA and the phone draw sampling all still pass with no console errors.
+
 ## Testing notes
 
 **Run `node scripts/check-layout.js` after any layout change.** It

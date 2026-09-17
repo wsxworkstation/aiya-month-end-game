@@ -571,8 +571,11 @@
     $("#timer-label").textContent = formatTime(state.remainingSec);
     const phase = state.remainingSec > 200 ? "白天" : state.remainingSec > 100 ? "黄昏" : "夜晚";
     $("#day-phase").textContent = phase;
+    // Rent is taken from the bank, so falling short matters - but the old banner sat
+    // over the map and covered the building labels. Mark the bank tile instead.
     const rent = currentRent();
-    $("#rent-warning").hidden = state.bank >= rent;
+    $(".hud-stat.bank").classList.toggle("short", state.bank < rent);
+    $("#bank-label").title = state.bank < rent ? `银行余额不足以支付本月房租（${money(rent)}）` : "";
     $("#bag-count").textContent = state.permanentItems.length + state.tempTools.length;
     const flags = state.flags;
     setCheck("work", flags.work);
@@ -1295,6 +1298,62 @@
       });
       LAMP_SPOTS.forEach(spot => drawLampGlow(spot.x, spot.y));
     }
+    // Last, so the night tint never dims it and the player never covers it.
+    drawNameplate();
+  }
+
+  // Pops the building's name over its roof as you walk up to it. This is the only
+  // place label on small screens (the street signposts are hidden there), so it has
+  // to work without them.
+  let nameplate = { id: null, since: 0 };
+
+  function nameplateTarget() {
+    if (!state || state.scene !== "town") return null;
+    const target = findNearbyTarget();
+    if (!target) return null;
+    if (target.id === "parttime") return { id: target.id, text: `${BOARD.icon} ${BOARD.label}`, cx: BOARD.x, topY: BOARD.y - 30 };
+    if (target.w) return { id: target.id, text: `${target.icon} ${target.label}`, cx: target.x + target.w / 2, topY: target.y };
+    return null;
+  }
+
+  function drawNameplate() {
+    const target = nameplateTarget();
+    if (!target) { nameplate.id = null; return; }
+    if (nameplate.id !== target.id) nameplate = { id: target.id, since: performance.now() };
+    const progress = clamp((performance.now() - nameplate.since) / 190, 0, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+
+    ctx.save();
+    ctx.font = "bold 19px monospace";
+    const width = ctx.measureText(target.text).width + 28;
+    const height = 34;
+    const lift = Math.max(target.topY - 18, height / 2 + 10);
+    ctx.globalAlpha = ease;
+    ctx.translate(target.cx, lift + (1 - ease) * 14);
+    ctx.scale(0.82 + 0.18 * ease, 0.82 + 0.18 * ease);
+
+    ctx.fillStyle = "rgba(255,216,96,.97)";
+    ctx.strokeStyle = "#241d35";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(-width / 2, -height / 2, width, height, 10);
+    else ctx.rect(-width / 2, -height / 2, width, height);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();                                  // little tail pointing at the roof
+    ctx.moveTo(-9, height / 2 - 1);
+    ctx.lineTo(9, height / 2 - 1);
+    ctx.lineTo(0, height / 2 + 10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#241d35";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(target.text, 0, 1);
+    ctx.restore();
   }
 
   // Roughly where the street lamps are painted in town-map-v2.png.
@@ -1330,7 +1389,8 @@
     const door = getDoor(building);
     const near = Math.hypot(state.player.x - door.x, state.player.y - door.y) < 46;
     const compactMobile = window.matchMedia("(max-width: 850px)").matches;
-    if (!compactMobile) drawSignpost(`${building.icon} ${building.label}`, building.x + building.w / 2, door.y + 24, near);
+    // When you're here, the nameplate over the roof says it - no need to say it twice.
+    if (!compactMobile && !near) drawSignpost(`${building.icon} ${building.label}`, building.x + building.w / 2, door.y + 24, false);
     if (near) {
       ctx.strokeStyle = "rgba(255,214,90,.9)"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(door.x, door.y, 20, 0, Math.PI * 2); ctx.stroke();
@@ -1359,7 +1419,7 @@
     }
     const near = Math.hypot(state.player.x - BOARD.x, state.player.y - BOARD.y) < 46;
     const compactMobile = window.matchMedia("(max-width: 850px)").matches;
-    if (!compactMobile) drawSignpost(`${BOARD.icon} ${BOARD.label}`, BOARD.x, BOARD.y + 34, near);
+    if (!compactMobile && !near) drawSignpost(`${BOARD.icon} ${BOARD.label}`, BOARD.x, BOARD.y + 34, false);
     if (near) {
       ctx.strokeStyle = "rgba(255,214,90,.9)"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(BOARD.x, BOARD.y, 20, 0, Math.PI * 2); ctx.stroke();
@@ -1447,7 +1507,15 @@
       hint.hidden = !nearbyTarget || paused;
       hint.textContent = nearbyTarget ? `E · ${nearbyTarget.label}` : "";
       $("#mobile-action").hidden = !nearbyTarget || paused;
-      if (state.scene === "town") $("#location-label").textContent = nearbyTarget?.label || "月底小镇";
+      // Outdoors the roof nameplate already names whatever you're standing at, so the
+      // chip stays on the town name and gets out of the way while a plate is showing.
+      if (state.scene === "town") {
+        const chip = $("#location-label");
+        chip.textContent = "月底小镇";
+        chip.hidden = !!nearbyTarget;
+      } else {
+        $("#location-label").hidden = false;
+      }
     }
     requestAnimationFrame(renderFrame);
   }

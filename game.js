@@ -370,6 +370,7 @@
 
   function openModal(html, options = {}) {
     paused = true;
+    $("#counter-bar").hidden = true;
     modalContent.innerHTML = html;
     modal.classList.toggle("wide", !!options.wide);
     modalClose.hidden = options.closable === false;
@@ -387,6 +388,11 @@
     modalOnClose = null;
     paused = !playing;
     callback?.();
+    // Still standing at the counter after finishing an errand: offer it again.
+    if (state && state.scene === "interior" && playing) {
+      const building = buildingList().find(item => item.id === state.interiorId);
+      if (building) showCounter(building);
+    }
   }
 
   // A draw should feel like a draw. Every pool used to render face-up the instant its
@@ -543,7 +549,7 @@
     runCardDraw({
       eyebrow: `第${state.month}月 · 命运抽卡`,
       title: "选一张，翻开它",
-      hint: "三张背面朝上。选中的那张就是你这个月要过的日子。",
+      hint: "选中的那张就是你这个月。",
       candidates,
       faceUp: card => cardMarkup(card, card.type, "本月命运", `fate:${card.id}`),
       stingFor: card => card.type === "good" ? 880 : card.type === "bad" ? 220 : 620,
@@ -722,6 +728,7 @@
 
   function movePlayer(dx, dy, delta) {
     if (!state || paused || !playing) return;
+    if (state.scene !== "town") return;
     const fatigueSpeed = state.motivation < 10 ? -0.10 : state.motivation < 30 ? -0.05 : state.motivation >= 90 ? 0.05 : 0;
     const speed = 152 * (1 + state.speedBonus + fatigueSpeed);
     const length = Math.hypot(dx, dy);
@@ -750,8 +757,8 @@
   function findNearbyTarget() {
     if (!state) return null;
     if (state.scene === "interior") {
-      const distance = Math.hypot(state.player.x - 480, state.player.y - 498);
-      return distance < 54 ? { id: "exit", label: "离开建筑" } : null;
+      const building = buildingList().find(item => item.id === state.interiorId);
+      return { id: "counter", label: building?.label || "柜台" };
     }
     const target = buildingList().find(building => {
       const door = getDoor(building);
@@ -767,7 +774,11 @@
     const target = findNearbyTarget();
     if (!target) { showToast("这里没有可以互动的东西"); return; }
     beep(620, 0.05, "square", 0.03);
-    if (target.id === "exit") { leaveInterior(); return; }
+    if (target.id === "counter") {
+      const building = buildingList().find(item => item.id === state.interiorId);
+      if (building) showCounter(building);
+      return;
+    }
     if (target.id === "parttime") { showPartTime(); return; }
     enterBuilding(target);
   }
@@ -775,12 +786,36 @@
   function enterBuilding(building) {
     state.scene = "interior";
     state.interiorId = building.id;
-    state.player = { x: 480, y: 458, facing: "up", moving: false };
     $("#location-label").textContent = building.label;
-    setTimeout(() => openBuildingInteraction(building.id), 70);
+    setTimeout(() => showCounter(building), 90);
+  }
+
+  const COUNTER_LINES = {
+    work: "老板抬头看你：「今天做哪一种？」",
+    bank: "柜台阿姨推了推眼镜：「存还是取？」",
+    stock: "经纪人转过屏幕：「今天这三只，看看？」",
+    roi: "研究员举起发光的小盆栽：「要投哪一种？」",
+    food: "老板挥着锅铲：「吃什么？」",
+    fun: "店员摘下耳机：「要玩一轮吗？」",
+    shop: "老板娘笑着说：「不灵不退款哦。」",
+    home: "你的房间。床就在那里。"
+  };
+
+  // A bottom dialogue bar rather than a centred modal, so the two characters stay
+  // visible above it while the player chooses.
+  function showCounter(building) {
+    $("#counter-who").textContent = building.label;
+    $("#counter-line").textContent = COUNTER_LINES[building.id] || "有人抬头看了你一眼。";
+    $("#counter-act").textContent = building.id === "home" ? "睡觉" : "办事";
+    $("#counter-bar").hidden = false;
+  }
+
+  function hideCounter() {
+    $("#counter-bar").hidden = true;
   }
 
   function leaveInterior() {
+    hideCounter();
     const building = buildingList().find(item => item.id === state.interiorId);
     state.scene = "town";
     state.interiorId = null;
@@ -798,7 +833,7 @@
     const done = state.workDone;
     const rate = ENERGY.workFalloff[Math.min(done, ENERGY.workFalloff.length - 1)];
     openModal(`<p class="eyebrow">摸鱼有限公司</p><h2>今天做哪一种活？</h2>
-      <p class="modal-intro">越难的活越赚，但动力扣得越狠。答错数学题工资减20%。</p>
+      <p class="modal-intro">越难越赚，动力扣得越多。答错扣20%工资。</p>
       <div class="status-strip">
         <span class="status-chip">动力 ${Math.round(state.motivation)}</span>
         <span class="status-chip">本月已做 ${done} 次</span>
@@ -868,15 +903,15 @@
   }
 
   function showPartTime() {
-    if (state.flags.partTimeDrawn) { simpleMessage("本月兼职抽过了", "公告板只剩下『免费加班』，你决定假装没看到。", "📌"); return; }
+    if (state.flags.partTimeDrawn) { simpleMessage("这个月抽过了", "公告板只剩『免费加班』。", "📌"); return; }
     state.flags.partTimeDrawn = true;
     const jobs = shuffle(PART_TIME).slice(0, 3);
     const offers = jobs.map(job => ({ job, tool: random(TEMP_TOOLS) }));
 
     runCardDraw({
       eyebrow: "兼职公告板",
-      title: "三张招工单，撕一张",
-      hint: "公告板上三张单子都反着贴。撕下哪张就做哪份，老板还附送一件工具。",
+      title: "撕一张",
+      hint: "撕下哪张做哪份，附送一件工具。",
       candidates: offers,
       faceUp: ({ job, tool }) => `<div class="offer-pair">
         ${cardMarkup(job, "choice", `工资 ${money(job.pay)}`, `parttime:${job.id}`)}
@@ -909,14 +944,14 @@
 
   function showFood() {
     const cost = state.freeFood ? 0 : 70;
-    if (state.wallet < cost) { simpleMessage("钱包不够", `吃饭需要${money(cost)}现金。银行有钱也要先去提款。`, "👛"); return; }
+    if (state.wallet < cost) { simpleMessage("钱包不够", `吃饭要${money(cost)}现金。`, "👛"); return; }
     const rate = ENERGY.mealFalloff[Math.min(state.mealsEaten, ENERGY.mealFalloff.length - 1)];
     if (rate <= 0.1 && state.mealsEaten >= ENERGY.mealFalloff.length - 1) {
-      simpleMessage("真的吃不下了", "你看着那碗饭，它也看着你。这个月再吃也补不回多少动力了。", "🍚");
+      simpleMessage("真的吃不下了", "这个月再吃也补不回动力了。", "🍚");
       return;
     }
     openModal(`<p class="eyebrow">月底食堂</p><h2>今天吃什么？</h2>
-      <p>支付${money(cost)}抽一道菜，补回动力。吃得越多，能补的越少。</p>
+      <p>抽一道菜补动力。吃越多，补越少。</p>
       <div class="status-strip">
         <span class="status-chip">动力 ${Math.round(state.motivation)}</span>
         <span class="status-chip">本月第 ${state.mealsEaten + 1} 餐</span>
@@ -929,8 +964,8 @@
       const candidates = [weightedOutcome(FOODS), weightedOutcome(FOODS), weightedOutcome(FOODS)];
       runCardDraw({
         eyebrow: "月底食堂",
-        title: "看menu太久了，直接抽",
-        hint: "老板把三张菜牌反扣在桌上。翻哪张就吃哪张。",
+        title: "今天吃什么？",
+        hint: "翻哪张吃哪张。",
         candidates,
         faceUp: food => cardMarkup(food, "good", "本月一次", `food:${food.id}`),
         stingFor: food => food.motivation >= 12 ? 880 : food.motivation >= 6 ? 620 : 300,
@@ -953,9 +988,9 @@
   }
 
   function showFun() {
-    if (state.wallet < 50) { simpleMessage("钱包不允许快乐", "娱乐需要$50现金。", "👛"); return; }
+    if (state.wallet < 50) { simpleMessage("钱不够", "娱乐要$50现金。", "👛"); return; }
     openModal(`<p class="eyebrow">开心一下</p><h2>花$50抽一次快乐</h2>
-      <p>玩一次补回一点动力。最差也不会亏动力。</p>
+      <p>最差也不会亏动力。</p>
       <div class="status-strip"><span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
       <button id="draw-fun" class="pixel-btn primary">支付$50并抽卡</button>`);
     $("#draw-fun").addEventListener("click", () => {
@@ -964,7 +999,7 @@
       runCardDraw({
         eyebrow: "开心一下",
         title: "今晚做什么？",
-        hint: "三个计划反扣着。翻开哪个就去做哪个，不准反悔。",
+        hint: "翻开哪个就去做哪个。",
         candidates,
         faceUp: fun => cardMarkup(fun, "choice", "本月一次", `fun:${fun.id}`),
         stingFor: fun => fun.motivation >= 12 ? 880 : fun.motivation >= 5 ? 620 : 300,
@@ -988,7 +1023,7 @@
     const rent = currentRent();
     openModal(`<p class="eyebrow">稳稳银行 · 本月利息${Math.round(state.bankRate * 100)}%</p><h2>钱要放对地方</h2>
       <div class="status-strip"><span class="status-chip">钱包 ${money(state.wallet)}</span><span class="status-chip">银行 ${money(state.bank)}</span><span class="status-chip">债务 ${money(state.debt)}</span><span class="status-chip">房租 ${money(rent)}</span></div>
-      <p class="modal-intro">房租只会从银行自动扣款。存款、提款和还债每次消耗5秒。</p>
+      <p class="modal-intro">房租只从银行扣。</p>
       <div class="input-row"><label>金额<input id="bank-amount" type="number" min="1" step="10" value="100"></label>
         <button id="deposit-btn" class="pixel-btn primary">存入银行</button><button id="withdraw-btn" class="pixel-btn">从银行提款</button><button id="repay-btn" class="pixel-btn danger">偿还债务</button></div>`);
     $("#deposit-btn").addEventListener("click", () => bankTransfer("deposit"));
@@ -1025,7 +1060,7 @@
     const offers = state.stockOffers.map(id => STOCKS.find(item => item.id === id));
     const holdings = Object.entries(state.holdings).filter(([, holding]) => holding.qty > 0);
     openModal(`<p class="eyebrow">涨跌交易所</p><h2>本月发现的三只股票</h2><div class="status-strip"><span class="status-chip">买卖一次 动力-${ENERGY.stock}</span><span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
-      <p class="modal-intro">本月只能购买其中一种，最多10股；已有股票随时可以卖。买卖没有手续费，每次操作消耗8秒。</p>
+      <p class="modal-intro">本月只能买一种，最多10股。持有的随时可卖。</p>
       <div class="card-grid">${offers.map(item => {
         const price = state.stockPrices[item.id];
         const hint = state.marketHint ? (price.change >= 0 ? "小道消息：市场气氛不错" : "小道消息：最近有点冷") : "趋势每月更新";
@@ -1079,7 +1114,7 @@
   function showROI() {
     if (state.flags.roi) { simpleMessage("本月已经投过了", "投资需要一点耐心。下个月钱会自动进入银行。", "🎯"); return; }
     openModal(`<p class="eyebrow">回报研究所</p><h2>选择风险，再抽回报</h2><div class="status-strip"><span class="status-chip">投资一次 动力-${ENERGY.roi}</span><span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
-      <p class="modal-intro">投入的钱会锁定一个月，下个月自动进入银行。不会损失全部本金。</p>
+      <p class="modal-intro">钱锁一个月，下月自动进银行。</p>
       <div class="card-grid">${ROI_TYPES.map(type => cardMarkup(type, type.color, `${type.min}% ～ +${type.max}%`, `roi:${type.id}`)).join("")}</div>`);
     $$('.game-card').forEach(button => button.addEventListener("click", () => chooseROIAmount(button.dataset.cardId)));
   }
@@ -1114,7 +1149,7 @@
   function showShop() {
     const offers = state.shopOffers.map(id => LUCK_ITEMS.find(item => item.id === id));
     openModal(`<p class="eyebrow">包好运杂货铺</p><h2>老板说：不灵不退款</h2><div class="status-strip"><span class="status-chip">买一件 动力-${ENERGY.shop}</span></div>
-      <p class="modal-intro">永久物品占用三格背包；药水只在本月生效。商品只能用钱包现金购买。</p>
+      <p class="modal-intro">永久物品占背包，药水只管本月。只收现金。</p>
       <div class="status-strip">
         <span class="status-chip">钱包 ${money(state.wallet)}</span>
         <span class="status-chip">永久背包 ${state.permanentItems.length}/3</span>
@@ -1522,33 +1557,45 @@
     ctx.fillStyle = phase === "night" ? "#28564b" : "#397c45"; ctx.fillRect(x - 9, y - 16, 25, 24); ctx.fillRect(x - 3, y - 24, 14, 12);
   }
 
+  // Interiors are a conversation, not a room. Walking across a one-purpose shop cost
+  // energy and changed nothing, so the player and the shopkeeper simply stand facing
+  // each other at the same height, and a menu handles interact/leave.
   function drawInterior() {
     const building = buildingList().find(item => item.id === state.interiorId);
     const panel = INTERIOR_PANELS[state.interiorId];
     const useArt = panel && ART.interiors.complete && ART.interiors.naturalWidth;
-    ctx.fillStyle = "#d8c29d"; ctx.fillRect(0, 0, 960, 540);
+
+    ctx.fillStyle = "#2b2338";
+    ctx.fillRect(0, 0, 960, 540);
     if (useArt) {
       const cellW = ART.interiors.naturalWidth / 5;
       const cellH = ART.interiors.naturalHeight / 2;
-      drawCover(ART.interiors, panel[0] * cellW, panel[1] * cellH, cellW, cellH, 50, 95, 860, 360);
-    } else {
-      ctx.fillStyle = building?.color || "#9275b8"; ctx.fillRect(0, 0, 960, 105);
-      ctx.fillStyle = "#f6eccf"; ctx.fillRect(50, 95, 860, 360);
-      ctx.fillStyle = "#8d765e";
-      for (let y = 110; y < 455; y += 34) ctx.fillRect(50, y, 860, 3);
-      ctx.fillStyle = "#755244"; ctx.fillRect(350, 185, 260, 62);
+      drawCover(ART.interiors, panel[0] * cellW, panel[1] * cellH, cellW, cellH, 0, 0, 960, 540);
     }
-    ctx.fillStyle = building?.color || "#9275b8"; ctx.fillRect(0, 0, 960, 40);
-    ctx.fillStyle = "#fff2ce"; ctx.font = "bold 22px monospace"; ctx.textAlign = "center"; ctx.fillText(`${building?.icon || ""} ${building?.label || "室内"}`, 480, 27);
-    ctx.fillStyle = "#2a233c"; ctx.fillRect(446, 453, 68, 62);
-    drawNPC(480, 330, building?.id);
-    drawPixelPerson(state.player.x, state.player.y, state.player.facing, state.player.moving);
+    // Push the backdrop back so the two characters read as the foreground.
+    ctx.fillStyle = "rgba(24,18,40,.36)";
+    ctx.fillRect(0, 0, 960, 540);
+
+    // Placed close together on purpose: the portrait camera shows roughly the middle
+    // 350px of the canvas, and both figures have to stay inside that window.
+    const groundY = 486;
+    const figureHeight = 372;
+    drawNPC(586, groundY, building?.id, figureHeight);
+    drawPlayerPortrait(374, groundY, figureHeight);
+
   }
 
-  function drawNPC(x, y, id) {
+  // The walking sheet's side-on frame, drawn big enough to match the NPC.
+  function drawPlayerPortrait(x, groundY, height) {
+    if (drawSpriteCell(ART.player, 0, 2, 8, 4, x, groundY, height)) return;
+    ctx.fillStyle = "#657fd1";
+    ctx.fillRect(x - 30, groundY - height, 60, height);
+  }
+
+  function drawNPC(x, y, id, height = 190) {
     const col = NPC_COLUMNS[id] ?? NPC_COLUMNS.work;
     const row = Math.floor(performance.now() / 900) % 2;
-    if (drawSpriteCell(ART.npcs, col, row, 9, 2, x, y, 190)) return;
+    if (drawSpriteCell(ART.npcs, col, row, 9, 2, x, y, height)) return;
     const colors = { bank: "#e6bb3e", work: "#657fd1", stock: "#58a4cd", roi: "#8268b6", food: "#dc7d3e", fun: "#d75b91", shop: "#58a879", home: "#a7846a" };
     ctx.fillStyle = "#33243c"; ctx.fillRect(x - 11, y - 24, 22, 8);
     ctx.fillStyle = "#f2ad7f"; ctx.fillRect(x - 9, y - 17, 18, 15);
@@ -1595,7 +1642,8 @@
       const hint = $("#interaction-hint");
       hint.hidden = !nearbyTarget || paused;
       hint.textContent = nearbyTarget ? `E · ${nearbyTarget.label}` : "";
-      $("#mobile-action").hidden = !nearbyTarget || paused;
+      $("#mobile-action").hidden = !nearbyTarget || paused || state.scene !== "town";
+      $(".month-checklist").hidden = state.scene !== "town";
       // Outdoors the roof nameplate already names whatever you're standing at, so the
       // chip stays on the town name and gets out of the way while a plate is showing.
       if (state.scene === "town") {
@@ -1663,9 +1711,14 @@
     $("#restart-btn").addEventListener("click", restart);
     $("#bag-btn").addEventListener("click", showBag);
     $("#audio-btn").addEventListener("click", toggleAudio);
-    $("#help-btn").addEventListener("click", () => simpleMessage("控制方法", "WASD或方向键走路，E或空格互动。手机使用屏幕方向键和互动按钮。卡片与数学题阅读期间计时暂停。", "🎮"));
+    $("#help-btn").addEventListener("click", () => simpleMessage("控制方法", "WASD或方向键走路，E或空格互动。手机用屏幕方向键和右下角按钮。走路和做事都会扣动力，动力归零本月就结束。", "🎮"));
     modalClose.addEventListener("click", closeModal);
-    $("#mobile-action").addEventListener("click", interact);
+    $("#mobile-action").addEventListener("pointerdown", event => { event.preventDefault(); interact(); });
+    $("#counter-act").addEventListener("click", () => {
+      const building = buildingList().find(item => item.id === state?.interiorId);
+      if (building) openBuildingInteraction(building.id);
+    });
+    $("#counter-leave").addEventListener("click", leaveInterior);
 
     window.addEventListener("keydown", event => {
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.code)) event.preventDefault();
@@ -1683,6 +1736,23 @@
       button.addEventListener("pointerup", release);
       button.addEventListener("pointercancel", release);
       button.addEventListener("pointerleave", release);
+    });
+
+    // Holding a control on a phone used to raise the OS copy/paste/share bar, which
+    // ate the press and left the player stuck. CSS user-select alone does not stop
+    // it on Android, so the long-press gestures are cancelled here too.
+    const swallow = event => event.preventDefault();
+    for (const node of [$("#game-screen"), $(".mobile-controls"), $(".hud"), canvas]) {
+      if (!node) continue;
+      node.addEventListener("contextmenu", swallow);
+      node.addEventListener("selectstart", swallow);
+      node.addEventListener("dragstart", swallow);
+    }
+    // Scoped to the D-pad only: preventDefault on touchstart also cancels the
+    // synthesized click, which would kill the action button below.
+    $$('[data-move]').forEach(button => {
+      button.addEventListener("touchstart", swallow, { passive: false });
+      button.addEventListener("touchmove", swallow, { passive: false });
     });
   }
 

@@ -15,15 +15,15 @@
       <div class="title-building building-a"></div>
       <div class="title-building building-b"></div>
       <div class="title-panel pixel-panel">
-        <p class="eyebrow">12个月 · 5分钟 · 别破产</p>
+        <p class="eyebrow">12个月 · 别破产</p>
         <h1>哎呀，<br><span>又月底了呀</span></h1>
-        <p class="subtitle">走路、打工、吃饭、抽卡、投资——<br>还有，记得回家睡觉。</p>
+        <p class="subtitle">动力有限。花在哪里，你自己决定。</p>
         <div class="title-actions">
           <button id="new-game-btn" class="pixel-btn primary">开始新生活</button>
           <button id="resume-btn" class="pixel-btn secondary" hidden>继续刚才的月份</button>
           <button id="collection-btn" class="pixel-btn ghost">卡片图鉴</button>
         </div>
-        <p class="controls-hint">电脑：WASD / 方向键　互动：E / 空格　手机：屏幕按钮</p>
+        <p class="controls-hint">WASD 走路 · E 互动</p>
       </div>
       <div class="pixel-person title-person" aria-hidden="true">
         <span class="hair"></span><span class="face"></span><span class="body"></span><span class="leg left"></span><span class="leg right"></span>
@@ -57,6 +57,14 @@
         <canvas id="game-canvas" width="960" height="540" aria-label="8-bit小镇游戏地图"></canvas>
         <div id="location-label" class="location-label">月底小镇</div>
         <div id="interaction-hint" class="interaction-hint" hidden>E · 互动</div>
+        <div id="counter-bar" class="counter-bar" hidden>
+          <p id="counter-who" class="counter-who"></p>
+          <p id="counter-line" class="counter-line"></p>
+          <div class="counter-actions">
+            <button id="counter-act" class="pixel-btn primary">办事</button>
+            <button id="counter-leave" class="pixel-btn ghost">离开</button>
+          </div>
+        </div>
       </div>
 
       <aside class="month-checklist" aria-label="本月事项">

@@ -497,3 +497,57 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
 .hud-stat.bank.short::before { background: #db414c; color: #fff; }
 
 .status-chip.warn { color: #8a3b18; background: #ffe0bd; border-color: #b4622d; }
+
+/* --- touch hardening ---------------------------------------------------------
+   Holding a control on a phone was selecting it and popping up the OS
+   copy/paste/share bar, which both blocks the button and steals the gesture. */
+html, body { -webkit-user-select: none; -ms-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#game-screen, #game-canvas, .mobile-controls, .hud { -webkit-touch-callout: none; }
+button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.mobile-controls button, .dpad button, .action-button { touch-action: none; -webkit-user-drag: none; }
+/* Text the player may legitimately want to read stays selectable. */
+.modal-intro, .result-box, .ledger { -webkit-user-select: text; user-select: text; }
+
+/* The D-pad sits left and the action button sat centred, which overlapped it on a
+   390px screen. Standard gamepad split instead: move left, act right. */
+.mobile-controls { justify-content: space-between; align-items: flex-end; }
+.action-button { position: static; left: auto; bottom: auto; transform: none; }
+
+
+/* --- interior counter dialogue ------------------------------------------------
+   Sits at the bottom like a JRPG text box so the two characters stay visible
+   above it, instead of a centred modal covering the whole scene. */
+.counter-bar {
+  position: absolute;
+  z-index: 26;
+  left: 50%;
+  bottom: 12px;
+  width: min(760px, calc(100% - 24px));
+  transform: translateX(-50%);
+  padding: 14px 18px 16px;
+  color: var(--ink);
+  background: linear-gradient(180deg, #fffaf0, #f3e6c8);
+  border: 4px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 0 10px 0 rgba(20, 15, 38, .45), 0 18px 40px rgba(8, 6, 20, .45);
+}
+.counter-who { margin: 0 0 6px; color: var(--purple); font-size: 11px; font-weight: 900; letter-spacing: 2px; }
+.counter-line { margin: 0 0 12px; font-size: 17px; font-weight: 900; line-height: 1.45; }
+.counter-actions { display: flex; gap: 10px; }
+.counter-actions .pixel-btn { flex: 1; }
+
+@media (max-width: 850px) and (orientation: portrait) {
+  .counter-bar { bottom: 112px; width: calc(100% - 20px); padding: 12px 14px 14px; }
+  .counter-line { font-size: 15px; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .counter-bar { bottom: 8px; padding: 9px 14px 11px; }
+  .counter-line { margin-bottom: 8px; font-size: 14px; }
+  .counter-actions .pixel-btn { min-height: 38px; }
+}
+
+/* On portrait the checklist was pinned under a HUD that is two rows tall there, so it
+   landed on top of the luck tile. */
+@media (max-width: 850px) and (orientation: portrait) {
+  .month-checklist { top: auto; bottom: 178px; right: 8px; }
+}

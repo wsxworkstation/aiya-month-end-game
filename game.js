@@ -22,6 +22,44 @@
   const modalClose = $("#modal-close");
   const canvas = $("#game-canvas");
   const ctx = canvas.getContext("2d");
+
+  // The canvas is a fixed 960x540 drawing surface stretched to whatever size the page
+  // gives it, which on a large monitor meant a 2x upscale and a soft, blurry town.
+  // Match the backing store to the real pixels and scale the context instead, so all
+  // the drawing code keeps working in 960x540 coordinates.
+  const SCENE_W = 960, SCENE_H = 540;
+
+  function fitCanvasToDisplay() {
+    const stage = canvas.parentElement;
+    const availableW = stage.clientWidth;
+    const availableH = stage.clientHeight - (stage.classList.contains("no-footer") ? 0 : 58);
+    if (availableW <= 0 || availableH <= 0) return;
+
+    // On a portrait phone the town deliberately overflows sideways so the camera can
+    // follow the player; everywhere else the whole scene is shown.
+    const followMode = state && state.scene === "town"
+      && window.matchMedia("(max-width: 850px) and (orientation: portrait)").matches;
+    let cssW, cssH;
+    if (followMode) {
+      cssH = availableH;
+      cssW = cssH * (SCENE_W / SCENE_H);
+    } else {
+      const scale = Math.min(availableW / SCENE_W, availableH / SCENE_H);
+      cssW = Math.floor(SCENE_W * scale);
+      cssH = Math.floor(SCENE_H * scale);
+    }
+    canvas.style.width = `${cssW}px`;
+    canvas.style.height = `${cssH}px`;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const width = Math.round(cssW * dpr);
+    const height = Math.round(cssH * dpr);
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    ctx.setTransform(width / SCENE_W, 0, 0, height / SCENE_H, 0, 0);
+  }
   ctx.imageSmoothingEnabled = true;
 
   const HOUSES = [
@@ -44,6 +82,67 @@
   const BOARD = { x: 480, y: 327, label: "兼职公告板", icon: "📋" };
   const TOWN_SCENERY = [
     { x: 418, y: 218, w: 124, h: 84 }
+  ];
+
+  // Water and sky read straight off town-map-v2.png (12px cells, 80x45). Without
+  // this the player could stroll across the sea and the skyline, because the only
+  // rule was 'not inside a building box'. Regenerate with scripts/build-water-mask.py.
+  const WATER_CELL = 12;
+  const WATER_MASK = [
+    "11111111111111111100111111111111111111100111111111111111111111101110111111101111",
+    "11111111111111111100100111100101111111111111111111110011111110110110001111001100",
+    "11111111111000111000000111111101111111111111111111100011111111111111110111101111",
+    "11100011100000000000000111100000001000111111111111100011111111011111111111111111",
+    "10000010000000000000001000000000000000110110111111110111111100011001111111111111",
+    "00000010000000000000000000000000000000000001111111111000011000111011011111101111",
+    "00000000000010011111000000000000000000000000111000111100011110111000001111111111",
+    "00000000000000011111000000000000000000000000110000011100011001111100000111111111",
+    "00000000000000011111000000000000000000000000110000011100000000110110000111111111",
+    "00000000000000011111000000000000000000000000111111111100000010111110000001111111",
+    "00000000000000011111000000000000000000000001111000011100000011111110000110001111",
+    "00000000000000010000000000000000000000000000111000011000000011111111111110000111",
+    "00100000010000000000000000000000000000000000010000010000000011100001111110000011",
+    "00000000000000000000000000000000000000000000001111100000000010110011111111000000",
+    "00000000000000001100000000000000000000000000000000000000000010000100011111000000",
+    "00000000000000000000000000000000000000000000000000000000000000011100000000000000",
+    "00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "10000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "00000000000000000000000000000000000000000000000000000000000000000000000000000001",
+    "00000000000000000000000000000000000000010000000000000000000000000000110100000001",
+    "00000000000000000000000000000000000000111000000000000000000000000000110100000000",
+    "00000000000000000000000000000000000001111100000000000000000000000000000000000000",
+    "00000000000000000000000000000000000001111100000000000000000000000000000000000000",
+    "00000000000000000000000000000000000000010000000000000000000000000000000100000000",
+    "00000000000000000000000000000000000000000000000000000000000000000000001000000000",
+    "00000000000000000000000000000000000000000000000000000000000000000000110000000000",
+    "00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "00000000000000000000000000000000000000000000000000000000000000001110000000000000",
+    "00000000000000000000000000000000000000000000000000000000000000101100011000000000",
+    "00000000000000000000000000000000000000011000000000000000000000110000111000000000",
+    "00000000000000000000000000000000000000001100000000000000000000100000101110000000",
+    "00101000000000000000000000000000000000001110000000000000000000110000100100000000",
+    "10000101000000000000000000000000000010000111100000000000000000000000000000000000",
+    "11100000100000000000000000000000000010011001100000000000000000000000000000000000",
+    "11111000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "11100000000000000000000000000000000000000010000000000000001000000000000000000000",
+    "00000000000010000000000000000000000000000000000000000000000000000000000000000000",
+    "00000000111111000000000000000000000000000000000000000000000000000000000000000000",
+    "00001011111111110000000000000000000000000000000000000000000000000000000000000000",
+    "10111111111100111000010000000000000000000000000000000000000000000000000000000000",
+    "11111111111110001100000000000000000000000000000000000000000000000000000000000000",
+    "11111111111110111110000000000000000000000000000000000000000000010000000000001100",
+    "11111111111111111111000000000000000000000000000000000000000000001000000100000000"
+  ];
+
+  // Sand, rocks and the pier are brown, so the colour mask misses them; these are the
+  // two shorelines and the sky band, measured off the art. No wall margin: they are
+  // already generous and sit at the edge of the map.
+  const OFF_LIMITS = [
+    { x: 0, y: 0, w: 960, h: 108 },
+    { x: 0, y: 376, w: 232, h: 164 },
+    { x: 876, y: 0, w: 84, h: 208 }
   ];
 
   const ART = {
@@ -718,7 +817,10 @@
 
   function isTownBlocked(x, y) {
     const solids = [...buildingList(), ...TOWN_SCENERY];
-    return solids.some(b => x > b.x - WALL_MARGIN && x < b.x + b.w + WALL_MARGIN && y > b.y - WALL_MARGIN && y < b.y + b.h + WALL_MARGIN);
+    if (solids.some(b => x > b.x - WALL_MARGIN && x < b.x + b.w + WALL_MARGIN && y > b.y - WALL_MARGIN && y < b.y + b.h + WALL_MARGIN)) return true;
+    if (OFF_LIMITS.some(b => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h)) return true;
+    const row = WATER_MASK[Math.floor(y / WATER_CELL)];
+    return !!row && row[Math.floor(x / WATER_CELL)] === "1";
   }
 
   function isBlocked(x, y) {
@@ -1636,13 +1738,16 @@
     }
 
     if (state && !screens.game.hidden) {
+      fitCanvasToDisplay();
       if (state.scene === "town") drawTown(); else drawInterior();
       updateCamera();
       nearbyTarget = findNearbyTarget();
       const hint = $("#interaction-hint");
       hint.hidden = !nearbyTarget || paused;
       hint.textContent = nearbyTarget ? `E · ${nearbyTarget.label}` : "";
-      $("#mobile-action").hidden = !nearbyTarget || paused || state.scene !== "town";
+      const canAct = !!nearbyTarget && !paused && state.scene === "town";
+      $("#mobile-action").classList.toggle("inactive", !canAct);
+      $("#mobile-action").textContent = canAct ? "进入" : "Click";
       $(".month-checklist").hidden = state.scene !== "town";
       // Outdoors the roof nameplate already names whatever you're standing at, so the
       // chip stays on the town name and gets out of the way while a plate is showing.

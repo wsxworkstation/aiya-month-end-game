@@ -551,3 +551,18 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 @media (max-width: 850px) and (orientation: portrait) {
   .month-checklist { top: auto; bottom: 178px; right: 8px; }
 }
+
+/* The action button stays in one place. It used to hide itself whenever nothing was
+   in range and bob up and down on a loop, so the thing you were aiming at kept
+   moving out from under your thumb. */
+.action-button:not([hidden]) { animation: none; }
+.action-button { transition: opacity .12s, filter .12s; }
+.action-button.inactive { opacity: .38; filter: grayscale(.6); pointer-events: none; }
+
+/* --- desktop canvas fit + sharpness -------------------------------------------
+   The old rule forced width:100% with a height that ignored the aspect ratio, so on
+   a wide short window the canvas overflowed the stage (the bottom of the town was
+   simply cut off) and was upscaled 2x into a blur. Let it size itself from the
+   aspect ratio and never exceed the stage. */
+/* Size is set in fitCanvasToDisplay(): CSS cannot express "largest 16:9 box that
+   fits this stage", and getting it wrong clipped the town or stretched it. */

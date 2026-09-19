@@ -32,7 +32,18 @@
   function fitCanvasToDisplay() {
     const stage = canvas.parentElement;
     const availableW = stage.clientWidth;
-    const availableH = stage.clientHeight - (stage.classList.contains("no-footer") ? 0 : 58);
+
+    // The on-screen controls float over the stage, so the canvas has to stop above
+    // them. It used to run underneath, which hid the bottom of the map - including
+    // the player's own doorstep, where they spawn.
+    let reserved = 58;
+    const controls = document.querySelector(".mobile-controls");
+    if (controls && getComputedStyle(controls).display !== "none") {
+      const stageBottom = stage.getBoundingClientRect().bottom;
+      const controlsTop = controls.getBoundingClientRect().top;
+      reserved = Math.max(reserved, stageBottom - controlsTop + 10);
+    }
+    const availableH = stage.clientHeight - reserved;
     if (availableW <= 0 || availableH <= 0) return;
 
     // On a portrait phone the town deliberately overflows sideways so the camera can
@@ -1711,9 +1722,12 @@
       canvas.style.left = "";
       return;
     }
-    const renderedWidth = canvas.clientHeight * (canvas.width / canvas.height);
-    const focusX = state.scene === "town" ? state.player.x : 480;
-    const desiredLeft = stage.clientWidth / 2 - (focusX / canvas.width) * renderedWidth;
+    // canvas.width is the device-pixel backing store, not the 960-wide scene the
+    // player's coordinates live in. Dividing by it put the camera in the wrong place
+    // and left the player just off the edge of the screen.
+    const renderedWidth = canvas.clientHeight * (SCENE_W / SCENE_H);
+    const focusX = state.scene === "town" ? state.player.x : SCENE_W / 2;
+    const desiredLeft = stage.clientWidth / 2 - (focusX / SCENE_W) * renderedWidth;
     canvas.style.left = `${clamp(desiredLeft, stage.clientWidth - renderedWidth, 0)}px`;
   }
 

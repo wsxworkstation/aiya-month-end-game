@@ -64,6 +64,9 @@ def road_mask():
     cols, rows = SCENE_W // CELL, SCENE_H // CELL
 
     walkable = np.zeros((rows, cols), dtype=bool)
+    # Proper ground, as opposed to hedges and roof edges you may pass through but
+    # nobody would choose to stand in. Thieves are only ever placed on this.
+    paved = np.zeros((rows, cols), dtype=bool)
     for gy in range(rows):
         for gx in range(cols):
             cx, cy = gx * CELL + CELL // 2, gy * CELL + CELL // 2
@@ -77,6 +80,7 @@ def road_mask():
             paving = saturation < 0.34 and high >= 185 and r >= g >= b
             leaves = g > r + 10 and g > b + 10 and 60 < g < 210
             walkable[gy, gx] = road or paving or leaves
+            paved[gy, gx] = road or paving
 
     closed = erode(dilate(walkable, 2), 2)
     for ex, ey, ew, eh in EDGES:
@@ -126,16 +130,20 @@ def road_mask():
             if run >= 3:
                 for k in range(min(ROOF_TRIM, run // 3 + 1)):
                     trimmed[start + k, gx] = True
-    return trimmed
+    # 0 solid, 1 passable but not real ground (hedges, roof edge), 2 road or paving
+    return np.where(trimmed, np.where(paved, 2, 1), 0)
 
 
 if __name__ == "__main__":
     mask = road_mask()
     rows, cols = mask.shape
-    print(f"// {cols}x{rows} cells of {CELL}px, {int(mask.sum())} walkable", file=sys.stderr)
+    print(f"// {cols}x{rows} cells of {CELL}px, {int((mask > 0).sum())} walkable, "
+          f"{int((mask == 2).sum())} of them real road", file=sys.stderr)
     if "--check" in sys.argv:
         sys.exit(0)
     print(f"  const ROAD_CELL = {CELL};")
     print("  const ROAD_MASK = [")
-    print(",\n".join('    "%s"' % "".join("1" if mask[y, x] else "0" for x in range(cols)) for y in range(rows)))
+    # 0 solid, 1 passable, 2 road or paving
+    rowsOut = ["    \"%s\"" % "".join(str(int(mask[y, x])) for x in range(cols)) for y in range(rows)]
+    print(",\n".join(rowsOut))
     print("  ];")

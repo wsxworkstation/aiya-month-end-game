@@ -46,7 +46,7 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 // will happily pass a map you cannot actually walk.
 const isBlocked = (x, y) => {
   const row = ROAD_MASK[Math.floor(y / ROAD_CELL)];
-  return !row || row[Math.floor(x / ROAD_CELL)] !== "1";
+  return !row || row[Math.floor(x / ROAD_CELL)] === "0";
 };
 const getDoor = (b) => ({ x: b.x + b.w / 2, y: b.y + b.h + 8 });
 

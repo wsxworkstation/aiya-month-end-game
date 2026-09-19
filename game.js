@@ -199,7 +199,8 @@
     town: loadArt("assets/art/town-map-v2.png"),
     player: loadArt("assets/art/player-sprites.png"),
     interiors: loadArt("assets/art/interior-atlas.png"),
-    npcs: loadArt("assets/art/npc-sprites.png")
+    npcs: loadArt("assets/art/npc-sprites.png"),
+    thief: loadArt("assets/art/thief-sprites.png")
   };
 
   const CARD_ART = {
@@ -323,7 +324,8 @@
     { id: "coincharm", name: "招财硬币", icon: "🪙", price: 160, luck: 5, copy: "装备时幸运+5" },
     { id: "socks", name: "左右脚幸运袜", icon: "🧦", price: 180, luck: 6, copy: "装备时幸运+6" },
     { id: "cat", name: "摇手猫挂件", icon: "🐈", price: 220, luck: 8, copy: "装备时幸运+8" },
-    { id: "potion", name: "本月一定行药水", icon: "🧪", price: 60, luck: 15, temporary: true, copy: "本月幸运+15" }
+    { id: "potion", name: "本月一定行药水", icon: "🧪", price: 60, luck: 15, temporary: true, copy: "本月幸运+15" },
+    { id: "spray", name: "防身喷雾", icon: "🧴", price: 150, spray: true, copy: "被小偷追上时自动使用一次，保住钱包" }
   ];
 
   const PART_TIME = [
@@ -460,12 +462,18 @@
       debt: 0,
       missedRentStreak: 0,
       motivation: ENERGY.monthStart,
+      energyStart: ENERGY.monthStart,
       energySpent: 0,
       walkCarry: 0,
       mealsEaten: 0,
       workDone: 0,
       sleptLastMonth: true,
       pendingEnergyPenalty: 0,
+      thieves: [],
+      thiefRespawn: 0,
+      sprayCharges: 0,
+      shake: 0,
+      thiefWarned: false,
       luck: 50,
       monthLuckBonus: 0,
       houseId,
@@ -622,7 +630,7 @@
 
   function showTutorial() {
     openModal(`<p class="eyebrow">房东的新手教学</p>
-      <h2>欢迎来到月底小镇</h2>
+      <h2>欢迎来到巴生小镇</h2>
       <div class="result-box">
         <p><strong>动力就是你的一天。</strong>每月${ENERGY.monthStart}点，走路、上班、投资都要扣。没有倒计时，慢慢想没关系。</p>
         <p><strong>① 去公司：</strong>简单／普通／困难三选一。越难越赚，动力扣得越多，数学题也越难。可以做很多次，但加班费会越来越少。</p>
@@ -644,10 +652,14 @@
       - (state.sleptLastMonth ? 0 : ENERGY.noSleepPenalty)
       - (state.pendingEnergyPenalty || 0);
     state.pendingEnergyPenalty = 0;
+    state.energyStart = state.motivation;
     state.energySpent = 0;
     state.walkCarry = 0;
     state.mealsEaten = 0;
     state.workDone = 0;
+    state.thieves = [];
+    state.thiefRespawn = 0;
+    state.shake = 0;
     state.bankRate = 0.05;
     state.rentDiscount = 0;
     state.monthLuckBonus = 0;
@@ -679,6 +691,18 @@
     resetMonthlyState();
     resolveDueROI();
     updateHUD();
+    if (state.month === THIEF.firstMonth && !state.thiefWarned) {
+      state.thiefWarned = true;
+      openModal(`<p class="eyebrow">巴生小镇</p><h2>街上开始不太干净</h2>
+        <div class="result-box">
+          <p>天黑以后会有小偷盯着你的钱包。他跑得比你快，打不过也跑不掉。</p>
+          <p><strong>躲进任何一家店，他就会消失。</strong></p>
+          <p>钱存进银行他就碰不到——身上别带太多现金。</p>
+        </div>
+        <button id="thief-warned" class="pixel-btn primary full-button">知道了</button>`, { closable: false });
+      $("#thief-warned").addEventListener("click", () => { closeModal(); drawFateCard(); });
+      return;
+    }
     drawFateCard();
   }
 
@@ -756,9 +780,7 @@
     $("#motivation-label").textContent = Math.round(state.motivation);
     const luck = effectiveLuck();
     $("#luck-label").textContent = `${luck} · ${luckLabel(luck)}`;
-    const phase = dayPhase();
-    $("#timer-label").textContent = PHASE_ICONS[phase];
-    $("#day-phase").title = PHASE_LABELS[phase];
+
     // Debt decides bankruptcy but used to be invisible until the month-end report.
     const owing = Math.round(state.debt);
     $("#debt-tile").hidden = owing <= 0;
@@ -784,15 +806,19 @@
 
   // Phase comes from cumulative spend, so it only ever moves forward. Eating or using
   // a tool buys you more energy, not an earlier hour.
+  // Measured against what this month actually started with, not a fixed number of
+  // points. A month opening at 65 energy (no sleep, no meal) could never reach an
+  // absolute 75 spent, so it stayed stuck in the afternoon and night never came.
   function dayPhase() {
     if (!state) return "morning";
-    if (state.energySpent >= ENERGY.nightAt) return "night";
-    if (state.energySpent >= ENERGY.afternoonAt) return "afternoon";
+    const budget = Math.max(1, state.energyStart || ENERGY.monthStart);
+    const spent = state.energySpent / budget;
+    if (spent >= ENERGY.nightAt / ENERGY.monthStart) return "night";
+    if (spent >= ENERGY.afternoonAt / ENERGY.monthStart) return "afternoon";
     return "morning";
   }
 
   const PHASE_LABELS = { morning: "早上", afternoon: "下午", night: "晚上" };
-  const PHASE_ICONS = { morning: "🌅", afternoon: "☀️", night: "🌙" };
 
   // Returns false when the player ran out and the month ended under them, so callers
   // can stop before charging money for something that no longer happens.
@@ -982,7 +1008,7 @@
     state.interiorId = null;
     const spot = standingSpot(building);
     state.player = { x: spot.x, y: spot.y, facing: "down", moving: false };
-    $("#location-label").textContent = "月底小镇";
+    $("#location-label").textContent = "巴生小镇";
   }
 
   function openBuildingInteraction(id) {
@@ -1317,7 +1343,7 @@
         <span class="status-chip">当前幸运 ${effectiveLuck()}</span>
       </div>
       <div class="card-grid">${offers.map(item => {
-        const owned = !item.temporary && state.permanentItems.includes(item.id);
+        const owned = !item.temporary && !item.spray && state.permanentItems.includes(item.id);
         const tooPoor = state.wallet < item.price;
         const note = owned ? "已拥有" : tooPoor ? `${money(item.price)} · 钱不够` : `${money(item.price)} · ${item.temporary ? "本月有效" : "永久装备"}`;
         return cardMarkup(item, owned ? "owned" : tooPoor ? "unaffordable" : "choice", note, `luck:${item.id}`);
@@ -1328,6 +1354,17 @@
   function buyLuckItem(id) {
     const item = LUCK_ITEMS.find(entry => entry.id === id);
     if (state.wallet < item.price) { showToast("钱包现金不够"); return; }
+    // The spray is a charge you carry, not a trinket that eats a backpack slot.
+    if (item.spray) {
+      state.wallet -= item.price;
+      state.sprayCharges += 1;
+      collect("幸运物品", item.id);
+      if (!spendEnergy(ENERGY.shop)) return;
+      updateHUD();
+      showShop();
+      showToast(`买到${item.name}`);
+      return;
+    }
     if (!item.temporary && state.permanentItems.length >= 3) { showToast("永久背包已经满了，先卖掉一件"); return; }
     if (!item.temporary && state.permanentItems.includes(id)) { showToast("同名物品效果不能叠加"); return; }
     state.wallet -= item.price;
@@ -1556,7 +1593,157 @@
     ctx.drawImage(ART.player, column * cellW, row * cellH, cellW, cellH, Math.round(x - size / 2), Math.round(y - size + 7), size, size);
   }
 
+  // --- thieves -------------------------------------------------------------------
+  // The wallet/bank split had no teeth: rent comes out of the bank, so cash in hand
+  // was never at risk and there was no reason to make the trip to deposit it. A thief
+  // who empties only the wallet turns "should I bank this?" into a real question that
+  // follows you all twelve months.
+  const THIEF = {
+    firstMonth: 3,          // months 1-2 are for learning the town
+    secondMonth: 7,         // a second one from here on
+    speedFactor: 2,         // twice the player: you cannot outrun him, only reach a door
+    sightRange: 260,
+    sightConeDeg: 35,
+    catchRadius: 24,
+    spotFreeze: 0.45,       // he gawks for a beat before giving chase
+    scanPeriod: 2.4,        // seconds for one full look left-and-right
+    scanSweepDeg: 55,
+    respawnDelay: 20
+  };
+
+  function thiefCountForMonth() {
+    if (state.month >= THIEF.secondMonth) return 2;
+    if (state.month >= THIEF.firstMonth) return 1;
+    return 0;
+  }
+
+  function spawnThief() {
+    for (let tries = 0; tries < 300; tries++) {
+      const x = 24 + Math.random() * 900;
+      const y = 30 + Math.random() * 470;
+      if (isTownBlocked(x, y)) continue;
+      // never materialise on top of the player
+      if (Math.hypot(x - state.player.x, y - state.player.y) < 300) continue;
+      return { x, y, baseDir: Math.random() * Math.PI * 2, dir: 0, mode: "idle", timer: Math.random() * THIEF.scanPeriod };
+    }
+    return null;
+  }
+
+  function updateThieves(delta) {
+    if (!state || !playing) return;
+    // Indoors you are simply safe: he is gone, and a new one turns up later elsewhere.
+    if (state.scene !== "town" || dayPhase() !== "night" || !thiefCountForMonth()) {
+      if (state.thieves.length) { state.thieves = []; state.thiefRespawn = THIEF.respawnDelay; }
+      return;
+    }
+
+    state.thiefRespawn -= delta;
+    if (state.thieves.length < thiefCountForMonth() && state.thiefRespawn <= 0) {
+      const born = spawnThief();
+      if (born) state.thieves.push(born);
+      state.thiefRespawn = THIEF.respawnDelay;
+    }
+
+    const speed = 152 * THIEF.speedFactor;
+    for (const thief of state.thieves) {
+      thief.timer += delta;
+      const toPlayer = Math.atan2(state.player.y - thief.y, state.player.x - thief.x);
+      const distance = Math.hypot(state.player.x - thief.x, state.player.y - thief.y);
+
+      if (thief.mode === "idle") {
+        // head sweeps left and right; he only notices what he happens to be facing
+        thief.dir = thief.baseDir + Math.sin(thief.timer / THIEF.scanPeriod * Math.PI * 2) * (THIEF.scanSweepDeg * Math.PI / 180);
+        let offset = Math.abs(((toPlayer - thief.dir + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+        if (distance < THIEF.sightRange && offset < THIEF.sightConeDeg * Math.PI / 180) {
+          thief.mode = "spotted";
+          thief.timer = 0;
+          state.shake = 0.35;
+          beep(180, .18, "sawtooth", .05);
+          setTimeout(() => beep(300, .12, "square", .04), 120);
+        }
+        continue;
+      }
+
+      if (thief.mode === "spotted") {
+        thief.dir = toPlayer;
+        if (thief.timer >= THIEF.spotFreeze) { thief.mode = "chase"; thief.timer = 0; }
+        continue;
+      }
+
+      thief.dir = toPlayer;
+      const step = speed * delta;
+      const nextX = clamp(thief.x + Math.cos(toPlayer) * step, 14, 946);
+      const nextY = clamp(thief.y + Math.sin(toPlayer) * step, 18, 520);
+      if (!isTownBlocked(nextX, thief.y)) thief.x = nextX;
+      if (!isTownBlocked(thief.x, nextY)) thief.y = nextY;
+
+      if (distance < THIEF.catchRadius) robPlayer(thief);
+    }
+  }
+
+  function robPlayer(thief) {
+    state.thieves = state.thieves.filter(item => item !== thief);
+    state.thiefRespawn = THIEF.respawnDelay;
+    state.shake = 0.5;
+
+    if (state.sprayCharges > 0) {
+      state.sprayCharges -= 1;
+      beep(880, .16, "square", .05);
+      updateHUD();
+      simpleMessage("防身喷雾救了你", "你闭着眼睛一顿乱喷。他捂着脸跑了，钱包还在。", "🧴");
+      return;
+    }
+    if (state.wallet <= 0) {
+      beep(220, .2, "sawtooth", .04);
+      simpleMessage("他白跑一趟", "他翻了翻你的口袋，一张钞票都没有，骂骂咧咧地走了。", "🕵️");
+      return;
+    }
+    const taken = Math.round(state.wallet);
+    state.wallet = 0;
+    state.monthLog.push({ label: "被小偷抢走", amount: -taken, positive: false });
+    beep(140, .3, "sawtooth", .06);
+    updateHUD();
+    simpleMessage("你被盗了", `他抢走了钱包里的全部${money(taken)}就跑了。<br><strong>银行里的钱他碰不到。</strong>`, "💸");
+  }
+
+  function drawThieves() {
+    for (const thief of state.thieves) {
+      const facingRight = Math.cos(thief.dir) >= 0;
+      const row = facingRight ? 2 : 1;
+      const column = thief.mode === "chase" ? 1 + Math.floor(performance.now() / 95) % 6 : 0;
+      // Placeholder until the thief sheet exists: an existing NPC, darkened.
+      const previous = ctx.filter;
+      ctx.filter = "brightness(0.42) saturate(0.55) contrast(1.15)";
+      const drawn = drawSpriteCell(ART.thief.complete && ART.thief.naturalWidth ? ART.thief : ART.npcs,
+        ART.thief.complete && ART.thief.naturalWidth ? column : NPC_COLUMNS.parttime,
+        ART.thief.complete && ART.thief.naturalWidth ? row : 0,
+        ART.thief.complete && ART.thief.naturalWidth ? 8 : 9,
+        ART.thief.complete && ART.thief.naturalWidth ? 4 : 2,
+        thief.x, thief.y, 62);
+      ctx.filter = previous;
+      if (!drawn) {
+        ctx.fillStyle = "#1d1730";
+        ctx.fillRect(thief.x - 13, thief.y - 46, 26, 46);
+      }
+      if (thief.mode !== "idle") {
+        ctx.fillStyle = "#ff4b5c";
+        ctx.font = "bold 30px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("!", thief.x, thief.y - 56);
+      }
+    }
+  }
+
   function drawTown() {
+    // A short shove of the camera when he spots you, and again when he gets you.
+    let shaking = false;
+    if (state.shake > 0) {
+      state.shake = Math.max(0, state.shake - 0.016);
+      const power = state.shake * 14;
+      ctx.save();
+      ctx.translate((Math.random() - .5) * power, (Math.random() - .5) * power);
+      shaking = true;
+    }
     const phase = dayPhase() === "morning" ? "day" : dayPhase() === "afternoon" ? "sunset" : "night";
     const useArt = ART.town.complete && ART.town.naturalWidth;
     if (useArt) {
@@ -1572,6 +1759,7 @@
     }
     buildingList().forEach(building => drawBuilding(building, useArt));
     drawBoard(useArt);
+    drawThieves();
     drawPixelPerson(state.player.x, state.player.y, state.player.facing, state.player.moving);
     if (phase === "sunset" || phase === "night") {
       if (useArt) ctx.fillStyle = phase === "night" ? "rgba(10,14,40,.45)" : "rgba(255,140,70,.12)";
@@ -1587,6 +1775,7 @@
     }
     // Last, so the night tint never dims it and the player never covers it.
     drawNameplate();
+    if (shaking) ctx.restore();
   }
 
   // Pops the building's name over its roof as you walk up to it. This is the only
@@ -1809,6 +1998,7 @@
         const here = buildingList().find(item => item.id === state.interiorId);
         if (here) showCounter(here);
       }
+      updateThieves(delta);
       fitCanvasToDisplay();
       if (state.scene === "town") drawTown(); else drawInterior();
       updateCamera();
@@ -1824,7 +2014,7 @@
       // chip stays on the town name and gets out of the way while a plate is showing.
       if (state.scene === "town") {
         const chip = $("#location-label");
-        chip.textContent = "月底小镇";
+        chip.textContent = "巴生小镇";
         chip.hidden = !!nearbyTarget;
       } else {
         $("#location-label").hidden = false;
@@ -1933,6 +2123,23 @@
       button.addEventListener("touchstart", swallow, { passive: false });
       button.addEventListener("touchmove", swallow, { passive: false });
     });
+  }
+
+  // Opt-in, read-only snapshot for browser tests. Without it a test can only infer the
+  // world from what happens to be painted, which made several bugs here very slow to
+  // pin down. Off unless the page is opened with ?debug=1.
+  if (location.search.includes("debug")) {
+    window.__peek = () => !state ? null : {
+      month: state.month, wallet: state.wallet, bank: state.bank, debt: state.debt,
+      energy: Math.round(state.motivation), spent: Math.round(state.energySpent),
+      phase: dayPhase(), scene: state.scene, playing,
+      player: { x: Math.round(state.player.x), y: Math.round(state.player.y) },
+      thieves: state.thieves.map(t => ({ x: Math.round(t.x), y: Math.round(t.y), mode: t.mode })),
+      spray: state.sprayCharges,
+      thiefRespawn: Math.round((state.thiefRespawn || 0) * 10) / 10,
+      wanted: thiefCountForMonth(),
+      thievesType: Array.isArray(state.thieves) ? "array" : typeof state.thieves
+    };
   }
 
   function init() {

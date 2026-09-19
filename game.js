@@ -1625,8 +1625,8 @@ const ROAD_CELL = 6;
     // Always slower than a rested player (152), but he picks up as the day wears on -
     // and you slow down as energy drains, so the two curves cross at night. Morning he
     // is a nuisance you jog away from; at night, tired, he is on your heels.
-    speedByPhase: { morning: 0.78, afternoon: 0.88, night: 0.96 },
-    sightRange: 150,      // he has to be near you, not across the plaza
+    speedByPhase: { morning: 0.68, afternoon: 0.78, night: 0.88 },
+    sightRange: 175,      // near you, but not across the plaza
     sightConeDeg: 35,
     noticeRadius: 74,       // bump into him and he does not need to be looking
     turnRate: 0.7,          // rad/s the gaze drifts, so there is no permanent blind side

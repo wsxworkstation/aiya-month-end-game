@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#17152d">
   <title>哎呀，又月底了呀</title>
-  <link rel="stylesheet" href="styles.css?v=13">
+  <link rel="stylesheet" href="styles.css?v=14">
 </head>
 <body>
   <main id="app" aria-label="哎呀，又月底了呀游戏">
@@ -41,11 +41,9 @@
           <div class="hud-stat bank"><span>银行</span><strong id="bank-label">$0</strong></div>
           <div class="hud-stat motivation"><span>动力</span><strong id="motivation-label">60</strong></div>
           <div class="hud-stat luck"><span>幸运</span><strong id="luck-label">50 · 普通</strong></div>
+          <div class="hud-stat debt" id="debt-tile" hidden><span>债务</span><strong id="debt-label">$0</strong></div>
         </div>
-        <div class="hud-clock">
-          <span id="day-phase">白天</span>
-          <strong id="timer-label">05:00</strong>
-        </div>
+        <div class="hud-clock" id="day-phase" title="早上"><span id="timer-label">🌅</span></div>
         <div class="hud-actions">
           <button id="bag-btn" class="icon-btn" aria-label="打开背包">🎒<span id="bag-count">0</span></button>
           <button id="audio-btn" class="icon-btn" aria-label="切换声音">🔊</button>
@@ -119,6 +117,6 @@
     </button>
   </template>
 
-  <script src="game.js?v=13"></script>
+  <script src="game.js?v=14"></script>
 </body>
 </html>

@@ -572,3 +572,23 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .interaction-hint { cursor: pointer; font-family: inherit; transition: transform .08s, box-shadow .08s; }
 .interaction-hint:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 4px 5px 0 var(--ink); }
 .interaction-hint:active { transform: translateX(-50%) translateY(1px); box-shadow: 1px 1px 0 var(--ink); }
+
+/* The clock said "时间 / 早上" in a tile as wide as a money readout, for one word that
+   changes three times a month. An emoji carries it, and the width goes to debt. */
+.hud-clock { min-width: 0; padding: 7px 10px; }
+.hud-clock #timer-label { font-size: 24px; line-height: 1; }
+.hud-stat.debt::before { content: "!"; color: #fff; background: #d0454f; }
+.hud-stat.debt strong { color: #ffb9bd; }
+
+/* The stat row was a fixed four columns; debt appears as a fifth only when you owe. */
+.hud-stats { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
+
+/* On mobile the HUD is a grid and the clock sat in the stretching 1fr column, so one
+   emoji got a banner-wide tile. Give it an auto column and let the slack fall before
+   the icon buttons instead. */
+@media (max-width: 850px) {
+  .hud { grid-template-columns: auto auto 1fr; }
+  .hud-clock { min-width: 0 !important; width: auto; padding: 6px 10px; }
+  .hud-clock #timer-label { font-size: 22px; }
+  .hud-actions { justify-self: end; }
+}

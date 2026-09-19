@@ -243,7 +243,7 @@
     noSleepPenalty: 25,       // collapse outdoors and next month opens short
     pixelsPerPoint: 80,       // walking the full 960px map costs about 12
     partTime: 20,
-    bank: 3,
+    bank: 0,              // paperwork, not effort
     stock: 5,
     roi: 10,
     shop: 3,
@@ -601,8 +601,8 @@
     const x = cols === 1 ? 0 : col * 100 / (cols - 1);
     const y = rows === 1 ? 0 : row * 100 / (rows - 1);
     const artStyle = art ? `style="--card-image:url('${sheet}');--card-size:${cols * 100}% ${rows * 100}%;--card-x:${x}%;--card-y:${y}%"` : "";
-    const effect = item.copy || item.effect || "等待揭晓";
-    const footer = meta && meta.trim() !== effect.trim() ? meta : "";
+    const effect = item.copy || item.effect || (item.pay != null ? `工资 ${money(item.pay)}` : "");
+    const footer = meta && meta.trim() && meta.trim() !== effect.trim() ? meta : "";
     const rarity = extraClass.includes("bad") ? "风险" : extraClass.includes("good") ? "好运" : extraClass.includes("stock") ? "市场" : "生活";
     return `<button class="game-card ${extraClass}" data-card-id="${item.id}">
       <span class="card-head"><span>${rarity}</span><span class="card-gem">◆</span></span>
@@ -756,8 +756,13 @@
     $("#motivation-label").textContent = Math.round(state.motivation);
     const luck = effectiveLuck();
     $("#luck-label").textContent = `${luck} · ${luckLabel(luck)}`;
-    $("#timer-label").textContent = PHASE_LABELS[dayPhase()];
-    $("#day-phase").textContent = "时间";
+    const phase = dayPhase();
+    $("#timer-label").textContent = PHASE_ICONS[phase];
+    $("#day-phase").title = PHASE_LABELS[phase];
+    // Debt decides bankruptcy but used to be invisible until the month-end report.
+    const owing = Math.round(state.debt);
+    $("#debt-tile").hidden = owing <= 0;
+    $("#debt-label").textContent = money(owing);
     // Rent is taken from the bank, so falling short matters - but the old banner sat
     // over the map and covered the building labels. Mark the bank tile instead.
     const rent = currentRent();
@@ -787,6 +792,7 @@
   }
 
   const PHASE_LABELS = { morning: "早上", afternoon: "下午", night: "晚上" };
+  const PHASE_ICONS = { morning: "🌅", afternoon: "☀️", night: "🌙" };
 
   // Returns false when the player ran out and the month ended under them, so callers
   // can stop before charging money for something that no longer happens.
@@ -1069,7 +1075,7 @@
       hint: "撕下哪张做哪份，附送一件工具。",
       candidates: offers,
       faceUp: ({ job, tool }) => `<div class="offer-pair">
-        ${cardMarkup(job, "choice", `工资 ${money(job.pay)}`, `parttime:${job.id}`)}
+        ${cardMarkup(job, "choice", "", `parttime:${job.id}`)}
         ${cardMarkup(tool, "good", "附赠工具", `tool:${tool.id}`)}
       </div>`,
       stingFor: ({ job }) => job.pay >= 160 ? 880 : job.pay >= 120 ? 620 : 380,
@@ -1794,6 +1800,15 @@
     }
 
     if (state && !screens.game.hidden) {
+      // Two watchdogs, because being stranded with nothing to press is the worst
+      // failure this game has. Whatever drained the last point, the month ends here;
+      // and if an errand ever leaves the counter closed while you are still indoors,
+      // put it back rather than trapping the player behind a blank screen.
+      if (playing && state.motivation <= 0) collapseFromExhaustion();
+      else if (playing && state.scene === "interior" && modalLayer.hidden && $("#counter-bar").hidden) {
+        const here = buildingList().find(item => item.id === state.interiorId);
+        if (here) showCounter(here);
+      }
       fitCanvasToDisplay();
       if (state.scene === "town") drawTown(); else drawInterior();
       updateCamera();

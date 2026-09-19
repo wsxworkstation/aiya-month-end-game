@@ -25,7 +25,7 @@ import numpy as np
 from PIL import Image
 
 ART = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "art")
-SHEETS = [("player-sprites.png", 8, 4), ("npc-sprites.png", 9, 2)]
+SHEETS = [("player-sprites.png", 8, 4), ("npc-sprites.png", 9, 2), ("thief-sprites.png", 8, 4)]
 ALPHA_FLOOR = 24      # ignore near-transparent halo pixels
 MIN_BLOB = 400        # a region this big counts as a character, not a detail
 MIN_DETAIL = 24       # keep smaller regions (a glint, an earring) but drop noise

@@ -252,10 +252,9 @@
     // pair becomes an infinite money loop (buy energy cheap, sell it dear).
     mealFalloff: [1, 0.6, 0.3, 0.1],
     workFalloff: [1, 0.7, 0.5, 0.35],
-    // The clock is driven by energy *spent*, never by energy left, so eating or using
-    // a tool cannot rewind the sky. You just end up working later into the night.
-    afternoonAt: 35,
-    nightAt: 75
+    // Time of day is read from energy left, and only ever moves forward.
+    afternoonBelow: 50,
+    nightBelow: 25
   };
 
   const WORK_TIERS = [
@@ -463,6 +462,7 @@
       missedRentStreak: 0,
       motivation: ENERGY.monthStart,
       energyStart: ENERGY.monthStart,
+      phaseReached: 0,
       energySpent: 0,
       walkCarry: 0,
       mealsEaten: 0,
@@ -653,6 +653,7 @@
       - (state.pendingEnergyPenalty || 0);
     state.pendingEnergyPenalty = 0;
     state.energyStart = state.motivation;
+    state.phaseReached = 0;
     state.energySpent = 0;
     state.walkCarry = 0;
     state.mealsEaten = 0;
@@ -695,8 +696,8 @@
       state.thiefWarned = true;
       openModal(`<p class="eyebrow">巴生小镇</p><h2>街上开始不太干净</h2>
         <div class="result-box">
-          <p>天黑以后会有小偷盯着你的钱包。他跑得比你快，打不过也跑不掉。</p>
-          <p><strong>躲进任何一家店，他就会消失。</strong></p>
+          <p>街上有小偷盯着你的钱包。有力气的时候你跑得过他——<strong>但动力越低你跑得越慢</strong>，他就会追上来。</p>
+          <p><strong>躲进任何一家店，出来时他已经换地方了。</strong></p>
           <p>钱存进银行他就碰不到——身上别带太多现金。</p>
         </div>
         <button id="thief-warned" class="pixel-btn primary full-button">知道了</button>`, { closable: false });
@@ -806,16 +807,19 @@
 
   // Phase comes from cumulative spend, so it only ever moves forward. Eating or using
   // a tool buys you more energy, not an earlier hour.
-  // Measured against what this month actually started with, not a fixed number of
-  // points. A month opening at 65 energy (no sleep, no meal) could never reach an
-  // absolute 75 spent, so it stayed stuck in the afternoon and night never came.
+  // Read from energy left, but one-way: eating buys you more energy, not an earlier
+  // hour, so the clock latches at the furthest point it has reached this month.
+  const PHASE_ORDER = ["morning", "afternoon", "night"];
+
+  function advanceDayPhase() {
+    if (!state) return;
+    const left = state.motivation;
+    const reached = left <= ENERGY.nightBelow ? 2 : left <= ENERGY.afternoonBelow ? 1 : 0;
+    if (reached > (state.phaseReached || 0)) state.phaseReached = reached;
+  }
+
   function dayPhase() {
-    if (!state) return "morning";
-    const budget = Math.max(1, state.energyStart || ENERGY.monthStart);
-    const spent = state.energySpent / budget;
-    if (spent >= ENERGY.nightAt / ENERGY.monthStart) return "night";
-    if (spent >= ENERGY.afternoonAt / ENERGY.monthStart) return "afternoon";
-    return "morning";
+    return PHASE_ORDER[state ? (state.phaseReached || 0) : 0];
   }
 
   const PHASE_LABELS = { morning: "早上", afternoon: "下午", night: "晚上" };
@@ -916,7 +920,11 @@
   function movePlayer(dx, dy, delta) {
     if (!state || paused || !playing) return;
     if (state.scene !== "town") return;
-    const fatigueSpeed = state.motivation < 10 ? -0.10 : state.motivation < 30 ? -0.05 : state.motivation >= 90 ? 0.05 : 0;
+    // Steeper than it was (-5%/-10%), because the thief's threat hangs off it: a
+    // 152 -> 144 -> 137 curve leaves no speed that is slower than a rested player yet
+    // meaningfully faster than a tired one. Running out of energy now visibly costs
+    // you your legs, which is the whole point of "I can't run at night".
+    const fatigueSpeed = state.motivation < 10 ? -0.30 : state.motivation < 30 ? -0.15 : state.motivation >= 90 ? 0.05 : 0;
     const speed = 152 * (1 + state.speedBonus + fatigueSpeed);
     const length = Math.hypot(dx, dy);
     const scale = length > 1 ? 1 / length : 1;
@@ -1003,6 +1011,9 @@
 
   function leaveInterior() {
     hideCounter();
+    // He has moved on while you were inside; you come out somewhere new to him.
+    state.thieves = [];
+    state.thiefRespawn = 0;
     const building = buildingList().find(item => item.id === state.interiorId);
     state.scene = "town";
     state.interiorId = null;
@@ -1601,7 +1612,10 @@
   const THIEF = {
     firstMonth: 3,          // months 1-2 are for learning the town
     secondMonth: 7,         // a second one from here on
-    speedFactor: 2,         // twice the player: you cannot outrun him, only reach a door
+    // Always slower than a rested player (152), but he picks up as the day wears on -
+    // and you slow down as energy drains, so the two curves cross at night. Morning he
+    // is a nuisance you jog away from; at night, tired, he is on your heels.
+    speedByPhase: { morning: 0.78, afternoon: 0.88, night: 0.96 },
     sightRange: 260,
     sightConeDeg: 35,
     catchRadius: 24,
@@ -1632,7 +1646,7 @@
   function updateThieves(delta) {
     if (!state || !playing) return;
     // Indoors you are simply safe: he is gone, and a new one turns up later elsewhere.
-    if (state.scene !== "town" || dayPhase() !== "night" || !thiefCountForMonth()) {
+    if (state.scene !== "town" || !thiefCountForMonth()) {
       if (state.thieves.length) { state.thieves = []; state.thiefRespawn = THIEF.respawnDelay; }
       return;
     }
@@ -1644,7 +1658,7 @@
       state.thiefRespawn = THIEF.respawnDelay;
     }
 
-    const speed = 152 * THIEF.speedFactor;
+    const speed = 152 * THIEF.speedByPhase[dayPhase()];
     for (const thief of state.thieves) {
       thief.timer += delta;
       const toPlayer = Math.atan2(state.player.y - thief.y, state.player.x - thief.x);
@@ -1708,24 +1722,32 @@
 
   function drawThieves() {
     for (const thief of state.thieves) {
-      const facingRight = Math.cos(thief.dir) >= 0;
-      const row = facingRight ? 2 : 1;
-      const column = thief.mode === "chase" ? 1 + Math.floor(performance.now() / 95) % 6 : 0;
-      // Placeholder until the thief sheet exists: an existing NPC, darkened.
+      const directionX = Math.cos(thief.dir);
+      const directionY = Math.sin(thief.dir);
+      const row = Math.abs(directionX) > Math.abs(directionY)
+        ? (directionX >= 0 ? 2 : 1)
+        : (directionY >= 0 ? 0 : 3);
+      const column = thief.mode === "spotted"
+        ? 7
+        : thief.mode === "chase"
+          ? 1 + Math.floor(performance.now() / 95) % 6
+          : 0;
+      const hasThiefArt = ART.thief.complete && ART.thief.naturalWidth;
+      // Keep the old darkened NPC as a loading/failure fallback only.
       const previous = ctx.filter;
-      ctx.filter = "brightness(0.42) saturate(0.55) contrast(1.15)";
-      const drawn = drawSpriteCell(ART.thief.complete && ART.thief.naturalWidth ? ART.thief : ART.npcs,
-        ART.thief.complete && ART.thief.naturalWidth ? column : NPC_COLUMNS.parttime,
-        ART.thief.complete && ART.thief.naturalWidth ? row : 0,
-        ART.thief.complete && ART.thief.naturalWidth ? 8 : 9,
-        ART.thief.complete && ART.thief.naturalWidth ? 4 : 2,
+      if (!hasThiefArt) ctx.filter = "brightness(0.42) saturate(0.55) contrast(1.15)";
+      const drawn = drawSpriteCell(hasThiefArt ? ART.thief : ART.npcs,
+        hasThiefArt ? column : NPC_COLUMNS.parttime,
+        hasThiefArt ? row : 0,
+        hasThiefArt ? 8 : 9,
+        hasThiefArt ? 4 : 2,
         thief.x, thief.y, 62);
       ctx.filter = previous;
       if (!drawn) {
         ctx.fillStyle = "#1d1730";
         ctx.fillRect(thief.x - 13, thief.y - 46, 26, 46);
       }
-      if (thief.mode !== "idle") {
+      if (thief.mode === "spotted" && !hasThiefArt) {
         ctx.fillStyle = "#ff4b5c";
         ctx.font = "bold 30px monospace";
         ctx.textAlign = "center";
@@ -1998,6 +2020,7 @@
         const here = buildingList().find(item => item.id === state.interiorId);
         if (here) showCounter(here);
       }
+      advanceDayPhase();
       updateThieves(delta);
       fitCanvasToDisplay();
       if (state.scene === "town") drawTown(); else drawInterior();

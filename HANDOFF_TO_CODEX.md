@@ -1,5 +1,11 @@
 # Handoff: art wiring + single-home simplification (Claude, 2026-09-16)
 
+## Codex thief sprite pass (2026-09-20)
+
+- Added `assets/art/thief-sprites.png`, a transparent 8×4 sheet (1776×888; exact 222px cells) matching the game's high-detail pixel-art characters.
+- Rows are down, left, right, up. Column 0 is alert idle, columns 1–6 are the chase run, and column 7 is a recoiling spotted pose with a red `!` contained in the cell.
+- `drawThieves()` now selects all four facing rows, uses column 7 during `spotted`, and no longer darkens the real thief artwork. The old darkened part-time NPC and canvas-drawn `!` remain only as a load/error fallback.
+
 ## Codex UI polish pass (2026-09-17)
 
 - Rebuilt the title screen as a compact dark-glass cover laid over the town art, with a stronger title hierarchy, cleaner rounded buttons and a single-column mobile layout.

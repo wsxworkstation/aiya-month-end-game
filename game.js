@@ -420,6 +420,7 @@
   let playing = false;
   let lastFrame = performance.now();
   let modalOnClose = null;
+  let modalLocked = false;
   let nearbyTarget = null;
   let toastTimer = null;
   let collection = loadJson(COLLECTION_KEY, []);
@@ -519,6 +520,7 @@
 
   function openModal(html, options = {}) {
     paused = true;
+    modalLocked = !!options.locked;
     $("#counter-bar").hidden = true;
     modalContent.innerHTML = html;
     modal.classList.toggle("wide", !!options.wide);
@@ -528,8 +530,13 @@
     beep(460, 0.05, "square", 0.025);
   }
 
-  function closeModal() {
+  function closeModal({ force = false } = {}) {
+    // The month-end report is locked: an action that ends the month mid-click used to
+    // have its own tidy-up run afterwards and close the report, leaving the player in
+    // a building with no report, no counter and no way to act.
+    if (modalLocked && !force) return;
     if (modalLayer.hidden) return;
+    modalLocked = false;
     modalLayer.hidden = true;
     modalContent.innerHTML = "";
     modal.classList.remove("wide");
@@ -1071,10 +1078,10 @@
         collect("兼职卡", job.id);
         collect("工具卡", tool.id);
         state.wallet += job.pay;
-        spendEnergy(ENERGY.partTime);
         if (state.tempTools.length < 3) state.tempTools.push(tool.id);
         else showToast("临时工具栏已满，新工具没地方放");
         state.monthLog.push({ label: `兼职：${job.name}`, amount: job.pay, positive: true });
+        if (!spendEnergy(ENERGY.partTime)) return;
         closeModal();
         updateHUD();
         showToast(`兼职完成，得到${money(job.pay)}和${tool.name}`);
@@ -1193,7 +1200,7 @@
       if (!paid) { showToast("银行余额不足，或目前没有债务"); return; }
       state.bank -= paid; state.debt -= paid;
     }
-    spendEnergy(ENERGY.bank);
+    if (!spendEnergy(ENERGY.bank)) return;
     updateHUD();
     showBank();
   }
@@ -1240,8 +1247,8 @@
       const old = state.holdings[id] || { qty: 0, avg: 0 };
       state.holdings[id] = { qty: old.qty + qty, avg: Math.round((old.avg * old.qty + cost) / (old.qty + qty)) };
       state.flags.stockBought = true;
-      spendEnergy(ENERGY.stock);
       state.monthLog.push({ label: `买入${stock.name}`, amount: -cost, positive: false });
+      if (!spendEnergy(ENERGY.stock)) return;
       closeModal(); updateHUD(); showToast(`买入${qty}股${stock.name}`);
     });
     $("#back-stock").addEventListener("click", showStock);
@@ -1253,8 +1260,8 @@
     const stock = STOCKS.find(item => item.id === id), price = state.stockPrices[id].price;
     holding.qty -= 1;
     state.wallet += price;
-    spendEnergy(ENERGY.stock);
     state.monthLog.push({ label: `卖出${stock.name}1股`, amount: price, positive: true });
+    if (!spendEnergy(ENERGY.stock)) return;
     updateHUD();
     showStock();
   }
@@ -1285,8 +1292,8 @@
     state.pendingROI.push({ dueMonth: state.month + 1, amount, payout, rate, name: type.name });
     state.flags.roi = true;
     collect("ROI卡", type.id);
-    spendEnergy(ENERGY.roi);
     state.monthLog.push({ label: `投入${type.name}`, amount: -amount, positive: false });
+    if (!spendEnergy(ENERGY.roi)) return;
     openModal(`<p class="eyebrow">ROI抽卡结果</p><h2>${rate >= 0 ? "项目看起来不错" : "好像有点不妙"}</h2>
       <div class="result-box">投入：${money(amount)}<br>抽到回报：<strong class="${rate >= 0 ? "positive" : "negative"}">${rate >= 0 ? "+" : ""}${rate}%</strong><br>下个月进入银行：<strong>${money(payout)}</strong></div>
       <button id="roi-done" class="pixel-btn primary">记住了</button>`, { closable: false });
@@ -1321,7 +1328,7 @@
     if (item.temporary) state.monthLuckBonus += item.luck;
     else state.permanentItems.push(item.id);
     collect("幸运物品", item.id);
-    spendEnergy(ENERGY.shop);
+    if (!spendEnergy(ENERGY.shop)) return;
     updateHUD();
     showShop();
     showToast(`买到${item.name}`);
@@ -1446,9 +1453,9 @@
       <table class="ledger"><tbody>${rows || "<tr><td>这个月很安静</td><td>—</td></tr>"}</tbody></table>
       <div class="status-strip"><span class="status-chip">钱包 ${money(state.wallet)}</span><span class="status-chip">银行 ${money(state.bank)}</span><span class="status-chip">债务 ${money(state.debt)}</span><span class="status-chip">总资产 ${money(total)}</span><span class="status-chip">动力 ${state.motivation}</span></div>
       ${state.missedRentStreak ? `<div class="result-box negative">⚠ 已连续${state.missedRentStreak}个月没有完整交租。连续3个月将破产。</div>` : ""}
-      <button id="next-month" class="pixel-btn ${failed ? "danger" : "primary"}" style="width:100%">${failed ? "面对破产" : finished ? "查看12个月结局" : `开始第${state.month + 1}月`}</button>`, { closable: false, wide: true });
+      <button id="next-month" class="pixel-btn ${failed ? "danger" : "primary"}" style="width:100%">${failed ? "面对破产" : finished ? "查看12个月结局" : `开始第${state.month + 1}月`}</button>`, { closable: false, wide: true, locked: true });
     $("#next-month").addEventListener("click", () => {
-      closeModal();
+      closeModal({ force: true });
       if (failed) showEnding(true);
       else if (finished) showEnding(false);
       else { state.month += 1; beginMonth(); }

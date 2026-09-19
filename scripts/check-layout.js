@@ -33,10 +33,8 @@ function literal(name, opener) {
 const HOUSES = literal("HOUSES", "[");
 const BASE_BUILDINGS = literal("BASE_BUILDINGS", "[");
 const BOARD = literal("BOARD", "{");
-const TOWN_SCENERY = literal("TOWN_SCENERY", "[");
-const OFF_LIMITS = literal("OFF_LIMITS", "[");
-const WATER_MASK = literal("WATER_MASK", "[");
-const WATER_CELL = Number((source.match(/const WATER_CELL = (\d+)/) || [])[1] || 12);
+const ROAD_MASK = literal("ROAD_MASK", "[");
+const ROAD_CELL = Number((source.match(/const ROAD_CELL = (\d+)/) || [])[1] || 6);
 
 const house = HOUSES[0];
 const buildings = [...BASE_BUILDINGS, { id: "home", label: house.name, x: house.x, y: house.y, w: house.w, h: house.h }];
@@ -44,14 +42,11 @@ const buildings = [...BASE_BUILDINGS, { id: "home", label: house.name, x: house.
 // Mirrors game.js
 const MIN_X = 14, MAX_X = 946, MIN_Y = 18, MAX_Y = 520;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const MARGIN = Number((source.match(/const WALL_MARGIN = (\d+)/) || [])[1] || 3);
-// Mirrors isTownBlocked() in game.js, water mask and shorelines included - a checker
-// that models fewer rules than the game will happily pass a map you cannot walk.
+// Mirrors isTownBlocked() in game.js. A checker that models fewer rules than the game
+// will happily pass a map you cannot actually walk.
 const isBlocked = (x, y) => {
-  if ([...buildings, ...TOWN_SCENERY].some(b => x > b.x - MARGIN && x < b.x + b.w + MARGIN && y > b.y - MARGIN && y < b.y + b.h + MARGIN)) return true;
-  if (OFF_LIMITS.some(b => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h)) return true;
-  const row = WATER_MASK[Math.floor(y / WATER_CELL)];
-  return !!row && row[Math.floor(x / WATER_CELL)] === "1";
+  const row = ROAD_MASK[Math.floor(y / ROAD_CELL)];
+  return !row || row[Math.floor(x / ROAD_CELL)] !== "1";
 };
 const getDoor = (b) => ({ x: b.x + b.w / 2, y: b.y + b.h + 8 });
 

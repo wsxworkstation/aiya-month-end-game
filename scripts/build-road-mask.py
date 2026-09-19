@@ -9,6 +9,9 @@ walkable only where the picture actually shows road or plaza paving.
 How the classification works:
   * road    - dark asphalt: low saturation, mid brightness
   * paving  - the light tan plaza: low saturation, bright, warm (r >= g >= b)
+  * leaves  - greenery. A palm's fronds are overhead, so you walk *under* them; the
+              same reads fine for hedges and planters. Blocking canopies made the
+              plaza feel like a maze of invisible posts.
   * a morphological close fills the small holes punched by planters, benches and
     manhole covers, so the plaza reads as one continuous surface
   * only the largest connected region is kept, which drops roof tiles and sand that
@@ -31,6 +34,11 @@ ART = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "
 SCENE_W, SCENE_H = 960, 540
 CELL = 6
 
+# The town sits inside a frame of scenery: sky and mountains along the top, sea and
+# beach in two corners. Greenery there must not turn walkable just because leaves are,
+# so these areas are excluded before anything else is classified.
+EDGES = [(0, 0, 960, 108), (0, 376, 232, 164), (876, 0, 84, 208)]
+
 
 def dilate(mask, k=1):
     out = mask.copy()
@@ -52,15 +60,21 @@ def road_mask():
     walkable = np.zeros((rows, cols), dtype=bool)
     for gy in range(rows):
         for gx in range(cols):
+            cx, cy = gx * CELL + CELL // 2, gy * CELL + CELL // 2
+            if any(ex <= cx < ex + ew and ey <= cy < ey + eh for ex, ey, ew, eh in EDGES):
+                continue
             block = pixels[gy * CELL:(gy + 1) * CELL, gx * CELL:(gx + 1) * CELL].reshape(-1, 3)
             r, g, b = np.median(block, axis=0)
             high, low = max(r, g, b), min(r, g, b)
             saturation = 0 if high == 0 else (high - low) / high
             road = saturation < 0.20 and 105 < high < 185
             paving = saturation < 0.34 and high >= 185 and r >= g >= b
-            walkable[gy, gx] = road or paving
+            leaves = g > r + 10 and g > b + 10 and 60 < g < 210
+            walkable[gy, gx] = road or paving or leaves
 
     closed = erode(dilate(walkable, 2), 2)
+    for ex, ey, ew, eh in EDGES:
+        closed[ey // CELL:(ey + eh + CELL - 1) // CELL, ex // CELL:(ex + ew + CELL - 1) // CELL] = False
 
     seen = np.zeros_like(closed)
     largest = []

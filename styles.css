@@ -566,3 +566,9 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
    aspect ratio and never exceed the stage. */
 /* Size is set in fitCanvasToDisplay(): CSS cannot express "largest 16:9 box that
    fits this stage", and getting it wrong clipped the town or stretched it. */
+
+/* The desktop prompt is a real button - clicking it enters, so the keyboard is
+   optional rather than required. */
+.interaction-hint { cursor: pointer; font-family: inherit; transition: transform .08s, box-shadow .08s; }
+.interaction-hint:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 4px 5px 0 var(--ink); }
+.interaction-hint:active { transform: translateX(-50%) translateY(1px); box-shadow: 1px 1px 0 var(--ink); }

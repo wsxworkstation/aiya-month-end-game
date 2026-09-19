@@ -16,6 +16,9 @@ How the classification works:
     manhole covers, so the plaza reads as one continuous surface
   * only the largest connected region is kept, which drops roof tiles and sand that
     happen to match the paving colour but are nowhere near a road
+  * finally the top of each solid run is freed: these buildings are drawn with the
+    roof rising above the footprint, so blocking the roof as well made it jut up into
+    whatever road passes behind the building
 
 Usage:  python scripts/build-road-mask.py           # print the JS literal
         python scripts/build-road-mask.py --check   # report cell counts only
@@ -38,6 +41,9 @@ CELL = 6
 # beach in two corners. Greenery there must not turn walkable just because leaves are,
 # so these areas are excluded before anything else is classified.
 EDGES = [(0, 0, 960, 108), (0, 376, 232, 164), (876, 0, 84, 208)]
+
+# How many cells of roof to open at the top of each solid run.
+ROOF_TRIM = 4
 
 
 def dilate(mask, k=1):
@@ -98,7 +104,29 @@ def road_mask():
     result = np.zeros_like(closed)
     for y, x in largest:
         result[y, x] = True
-    return result
+
+    # Free the roof: walk each column, and for every solid run that is not part of the
+    # scenery frame, open the first few cells so only the building's body blocks.
+    trimmed = result.copy()
+    for gx in range(cols):
+        gy = 0
+        while gy < rows:
+            cx, cy = gx * CELL + CELL // 2, gy * CELL + CELL // 2
+            framed = any(ex <= cx < ex + ew and ey <= cy < ey + eh for ex, ey, ew, eh in EDGES)
+            if result[gy, gx] or framed:
+                gy += 1
+                continue
+            start = gy
+            while gy < rows:
+                cy = gy * CELL + CELL // 2
+                if result[gy, gx] or any(ex <= cx < ex + ew and ey <= cy < ey + eh for ex, ey, ew, eh in EDGES):
+                    break
+                gy += 1
+            run = gy - start
+            if run >= 3:
+                for k in range(min(ROOF_TRIM, run // 3 + 1)):
+                    trimmed[start + k, gx] = True
+    return trimmed
 
 
 if __name__ == "__main__":

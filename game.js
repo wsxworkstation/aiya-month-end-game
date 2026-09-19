@@ -1626,7 +1626,8 @@ const ROAD_CELL = 6;
     // and you slow down as energy drains, so the two curves cross at night. Morning he
     // is a nuisance you jog away from; at night, tired, he is on your heels.
     speedByPhase: { morning: 0.68, afternoon: 0.78, night: 0.88 },
-    sightRange: 175,      // near you, but not across the plaza
+    // He sees less once it is dark, which is the counterweight to being quicker then.
+    sightByPhase: { morning: 155, afternoon: 155, night: 100 },
     sightConeDeg: 35,
     noticeRadius: 74,       // bump into him and he does not need to be looking
     turnRate: 0.7,          // rad/s the gaze drifts, so there is no permanent blind side
@@ -1684,7 +1685,7 @@ const ROAD_CELL = 6;
         thief.baseDir += THIEF.turnRate * delta;
         thief.dir = thief.baseDir + Math.sin(thief.timer / THIEF.scanPeriod * Math.PI * 2) * (THIEF.scanSweepDeg * Math.PI / 180);
         const offset = Math.abs(((toPlayer - thief.dir + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
-        const inView = distance < THIEF.sightRange && offset < THIEF.sightConeDeg * Math.PI / 180;
+        const inView = distance < THIEF.sightByPhase[dayPhase()] && offset < THIEF.sightConeDeg * Math.PI / 180;
         if (inView || distance < THIEF.noticeRadius) {
           thief.mode = "spotted";
           thief.timer = 0;

@@ -1,0 +1,41 @@
+{
+  "grid": { "columns": 4, "rows": 4, "order": "row-major", "indexBase": 0 },
+  "sheets": {
+    "extra1": {
+      "file": "assets/art/card-art-extra-1.png",
+      "cards": [
+        "fate:pocket", "fate:angpow", "fate:promo", "fate:extrameat",
+        "fate:lift", "fate:powerbank", "fate:farewell", "fate:wifi",
+        "fate:slipper", "fate:fixdeposit", "fate:aircon", "fate:jam",
+        "fate:sock", "fate:databill", "fate:reno", "fate:puddle"
+      ]
+    },
+    "extra2": {
+      "file": "assets/art/card-art-extra-2.png",
+      "cards": [
+        "fate:battery", "fate:rain", "fate:catplant", "fate:annualfee",
+        "fate:nobonus", "fate:lend", "fate:parking", "fate:cousin",
+        "fate:drama", "fate:moving", "fate:expired", "fate:resell",
+        "fate:gym", "fate:remedy", "fate:allnight", "fate:nightrun"
+      ]
+    },
+    "extra3": {
+      "file": "assets/art/card-art-extra-3.png",
+      "cards": [
+        "fate:livestream", "fate:covershift", "fate:charm", "fate:durian",
+        "food:claypot", "food:wantan", "food:chicken", "food:satay",
+        "food:cendol", "food:instant", "food:coldpack", "food:hair",
+        "fun:karaoke", "fun:badminton", "fun:mall", "fun:claw"
+      ]
+    },
+    "extra4": {
+      "file": "assets/art/card-art-extra-4.png",
+      "cards": [
+        "fun:park", "fun:spoiler", "fun:queue", "tool:coffee",
+        "tool:earplug", "tool:shortcut", "tool:amulet", "tool:energydrink",
+        "parttime:wedding", "parttime:mascot", "parttime:delivery", "parttime:petshop",
+        "parttime:carwash", "parttime:survey", "parttime:lineup", "luck:spray"
+      ]
+    }
+  }
+}

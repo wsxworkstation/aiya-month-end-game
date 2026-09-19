@@ -1,6 +1,26 @@
 # Handoff to Claude Code — 《哎呀，又月底了呀》
 
-Updated: 2026-09-17
+Updated: 2026-09-20
+
+## Codex card-art delivery (2026-09-20)
+
+Codex generated the 64 missing card illustrations as four new 4x4 atlases:
+
+- `assets/art/card-art-extra-1.png`
+- `assets/art/card-art-extra-2.png`
+- `assets/art/card-art-extra-3.png`
+- `assets/art/card-art-extra-4.png`
+
+The exact zero-based row-major card order is in
+`assets/art/card-art-extra-manifest.json`. Use the manifest as the source of
+truth when adding the 64 `CARD_ART` entries. All four sheets are 4 columns by
+4 rows, so `cardMarkup()` needs per-sheet column/row metadata instead of the
+current `items ? 6x3 : 6x6` branch.
+
+The new sheets cover exactly: 36 additional fate cards, 8 food cards, 7 fun
+cards, 5 tools, 7 part-time jobs, and `luck:spray`. Do not remap or replace the
+existing `main` and `items` atlas cells. The unused legacy mappings
+`parttime:board` and `parttime:mystery` are not part of this delivery.
 
 ## Read first
 

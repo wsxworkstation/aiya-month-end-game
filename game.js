@@ -203,6 +203,18 @@ const ROAD_CELL = 6;
     thief: loadArt("assets/art/thief-sprites.png")
   };
 
+  // Each atlas states its own grid, so adding one is a line here rather than another
+  // branch inside cardMarkup(). extra1-4 came from Codex with a manifest; the game
+  // grew 64 cards past what the first two sheets could hold.
+  const CARD_SHEETS = {
+    main:   { src: "assets/art/card-art-main.png",    cols: 6, rows: 6 },
+    items:  { src: "assets/art/card-art-items.png",   cols: 6, rows: 3 },
+    extra1: { src: "assets/art/card-art-extra-1.png", cols: 4, rows: 4 },
+    extra2: { src: "assets/art/card-art-extra-2.png", cols: 4, rows: 4 },
+    extra3: { src: "assets/art/card-art-extra-3.png", cols: 4, rows: 4 },
+    extra4: { src: "assets/art/card-art-extra-4.png", cols: 4, rows: 4 }
+  };
+
   const CARD_ART = {
     "fate:bonus": ["main", 0], "fate:bus": ["main", 1], "fate:rent": ["main", 2],
     "fate:energy": ["main", 3], "fate:bankday": ["main", 4], "fate:phone": ["main", 5],
@@ -221,7 +233,31 @@ const ROAD_CELL = 6;
     "luck:necklace": ["items", 7], "luck:coincharm": ["items", 8], "luck:socks": ["items", 9],
     "luck:cat": ["items", 10], "luck:potion": ["items", 11],
     "parttime:mamak": ["items", 12], "parttime:market": ["items", 13], "parttime:warehouse": ["items", 14],
-    "parttime:flyer": ["items", 15], "parttime:tutor": ["items", 16], "parttime:mystery": ["items", 17]
+    "parttime:flyer": ["items", 15], "parttime:tutor": ["items", 16], "parttime:mystery": ["items", 17],
+
+    // added with card-art-extra-1..4
+    "fate:pocket": ["extra1", 0], "fate:angpow": ["extra1", 1], "fate:promo": ["extra1", 2],
+    "fate:extrameat": ["extra1", 3], "fate:lift": ["extra1", 4], "fate:powerbank": ["extra1", 5],
+    "fate:farewell": ["extra1", 6], "fate:wifi": ["extra1", 7], "fate:slipper": ["extra1", 8],
+    "fate:fixdeposit": ["extra1", 9], "fate:aircon": ["extra1", 10], "fate:jam": ["extra1", 11],
+    "fate:sock": ["extra1", 12], "fate:databill": ["extra1", 13], "fate:reno": ["extra1", 14],
+    "fate:puddle": ["extra1", 15], "fate:battery": ["extra2", 0], "fate:rain": ["extra2", 1],
+    "fate:catplant": ["extra2", 2], "fate:annualfee": ["extra2", 3], "fate:nobonus": ["extra2", 4],
+    "fate:lend": ["extra2", 5], "fate:parking": ["extra2", 6], "fate:cousin": ["extra2", 7],
+    "fate:drama": ["extra2", 8], "fate:moving": ["extra2", 9], "fate:expired": ["extra2", 10],
+    "fate:resell": ["extra2", 11], "fate:gym": ["extra2", 12], "fate:remedy": ["extra2", 13],
+    "fate:allnight": ["extra2", 14], "fate:nightrun": ["extra2", 15], "fate:livestream": ["extra3", 0],
+    "fate:covershift": ["extra3", 1], "fate:charm": ["extra3", 2], "fate:durian": ["extra3", 3],
+    "food:claypot": ["extra3", 4], "food:wantan": ["extra3", 5], "food:chicken": ["extra3", 6],
+    "food:satay": ["extra3", 7], "food:cendol": ["extra3", 8], "food:instant": ["extra3", 9],
+    "food:coldpack": ["extra3", 10], "food:hair": ["extra3", 11], "fun:karaoke": ["extra3", 12],
+    "fun:badminton": ["extra3", 13], "fun:mall": ["extra3", 14], "fun:claw": ["extra3", 15],
+    "fun:park": ["extra4", 0], "fun:spoiler": ["extra4", 1], "fun:queue": ["extra4", 2],
+    "tool:coffee": ["extra4", 3], "tool:earplug": ["extra4", 4], "tool:shortcut": ["extra4", 5],
+    "tool:amulet": ["extra4", 6], "tool:energydrink": ["extra4", 7], "parttime:wedding": ["extra4", 8],
+    "parttime:mascot": ["extra4", 9], "parttime:delivery": ["extra4", 10], "parttime:petshop": ["extra4", 11],
+    "parttime:carwash": ["extra4", 12], "parttime:survey": ["extra4", 13], "parttime:lineup": ["extra4", 14],
+    "luck:spray": ["extra4", 15]
   };
 
   const INTERIOR_PANELS = {
@@ -600,9 +636,10 @@ const ROAD_CELL = 6;
 
   function cardMarkup(item, extraClass = "", meta = "", artKey = "") {
     const art = CARD_ART[artKey];
-    const sheet = art?.[0] === "items" ? "assets/art/card-art-items.png" : "assets/art/card-art-main.png";
-    const cols = 6;
-    const rows = art?.[0] === "items" ? 3 : 6;
+    const atlas = art ? CARD_SHEETS[art[0]] : null;
+    const sheet = atlas ? atlas.src : "";
+    const cols = atlas ? atlas.cols : 1;
+    const rows = atlas ? atlas.rows : 1;
     const index = art?.[1] ?? 0;
     const col = index % cols;
     const row = Math.floor(index / cols);
@@ -672,7 +709,11 @@ const ROAD_CELL = 6;
     state.flags = { work: false, food: false, fun: false, roi: false, partTimeDrawn: false, stockBought: false };
     state.tempTools = [];
     state.stockOffers = [];
-    state.shopOffers = shuffle(LUCK_ITEMS).slice(0, 3).map(item => item.id);
+    // The spray answers the thief, so once thieves exist it is always on the shelf;
+    // leaving it to a 3-of-6 shuffle meant the counter was missing half the months.
+    const staple = thiefCountForMonth() ? LUCK_ITEMS.filter(item => item.spray) : [];
+    const rest = shuffle(LUCK_ITEMS.filter(item => !staple.includes(item)));
+    state.shopOffers = [...staple, ...rest].slice(0, 3).map(item => item.id);
     state.monthLog = [];
     state.scene = "town";
     state.interiorId = null;
@@ -791,7 +832,7 @@ const ROAD_CELL = 6;
     const rent = currentRent();
     $(".hud-stat.bank").classList.toggle("short", state.bank < rent);
     $("#bank-label").title = state.bank < rent ? `银行余额不足以支付本月房租（${money(rent)}）` : "";
-    $("#bag-count").textContent = state.permanentItems.length + state.tempTools.length;
+    $("#bag-count").textContent = state.permanentItems.length + state.tempTools.length + state.sprayCharges;
     const flags = state.flags;
     setCheck("work", flags.work);
     setCheck("food", flags.food);
@@ -1409,9 +1450,12 @@ const ROAD_CELL = 6;
 
   function showBag() {
     if (!state) return;
+    const sprayLine = state.sprayCharges > 0
+      ? `<div class="status-strip"><span class="status-chip">🧴 防身喷雾 x${state.sprayCharges} · 被追上时自动使用</span></div>`
+      : "";
     const permanent = state.permanentItems.map(id => LUCK_ITEMS.find(item => item.id === id));
     const temporary = state.tempTools.map(id => TEMP_TOOLS.find(item => item.id === id));
-    openModal(`<p class="eyebrow">背包</p><h2>永久幸运物品 ${permanent.length}/3</h2>
+    openModal(`<p class="eyebrow">背包</p><h2>永久幸运物品 ${permanent.length}/3</h2>${sprayLine}
       <div class="inventory-grid">${[0, 1, 2].map(index => permanent[index] ? `<div class="inventory-slot"><strong>${permanent[index].icon} ${permanent[index].name}</strong><p>${permanent[index].copy}</p><button class="pixel-btn" data-sell-item="${permanent[index].id}">卖出 ${money(permanent[index].price * .5)}</button></div>` : `<div class="inventory-slot empty">空位</div>`).join("")}</div>
       <h3 style="margin-top:24px">本月临时工具 ${temporary.length}/3</h3>
       <div class="inventory-grid">${[0, 1, 2].map(index => temporary[index] ? `<div class="inventory-slot"><strong>${temporary[index].icon} ${temporary[index].name}</strong><p>${temporary[index].copy}</p><button class="pixel-btn primary" data-use-tool="${index}">使用</button></div>` : `<div class="inventory-slot empty">空位</div>`).join("")}</div>`);

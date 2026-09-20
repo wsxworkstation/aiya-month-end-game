@@ -257,7 +257,10 @@ const ROAD_CELL = 6;
     "tool:amulet": ["extra4", 6], "tool:energydrink": ["extra4", 7], "parttime:wedding": ["extra4", 8],
     "parttime:mascot": ["extra4", 9], "parttime:delivery": ["extra4", 10], "parttime:petshop": ["extra4", 11],
     "parttime:carwash": ["extra4", 12], "parttime:survey": ["extra4", 13], "parttime:lineup": ["extra4", 14],
-    "luck:spray": ["extra4", 15]
+    "luck:spray": ["extra4", 15], "tool:spray": ["extra4", 15],
+    // Permanent goods. The running shoes and the earplugs were drawn for the old
+    // one-month tools, which no longer exist, so the pictures come across with them.
+    "luck:shoes": ["items", 0], "luck:earplug": ["extra4", 4], "luck:laptop": ["main", 23]
   };
 
   const INTERIOR_PANELS = {
@@ -343,21 +346,22 @@ const ROAD_CELL = 6;
   // price. Luck used to be the only thing the shop sold, which made it the only stat
   // anyone thought about; it is now one item among several that change how a month
   // actually plays out.
-  const PERMANENT_ITEMS = [
+const PERMANENT_ITEMS = [
     { id: "necklace", name: "转运项链", icon: "📿", price: 280, luck: 10, copy: "永久幸运+10" },
-    { id: "shoes", name: "飞毛腿跑鞋", icon: "👟", price: 300, speed: 0.18, art: "tool:shoes", copy: "永久走路快18%，小偷追不上" },
+    { id: "shoes", name: "飞毛腿跑鞋", icon: "👟", price: 300, speed: 0.18, copy: "永久走路快18%，小偷追不上" },
     { id: "socks", name: "软底舒服袜", icon: "🧦", price: 240, walk: 0.3, copy: "走路少花30%动力" },
-    { id: "lunchbox", name: "保温饭盒", icon: "🍱", price: 260, meal: 0.35, art: "tool:meal", copy: "每餐多回35%动力" },
-    { id: "potion", name: "阿嬷的药油", icon: "🧪", price: 220, sleep: 10, copy: "每次睡觉多回10动力" },
+    { id: "earplug", name: "隔音耳塞", icon: "🎧", price: 220, sleep: 10, copy: "每次睡觉多回10动力" },
+    { id: "potion", name: "阿嬷的补药水", icon: "🧪", price: 260, meal: 0.35, copy: "每餐多回35%动力" },
     { id: "coincharm", name: "铜钱串", icon: "🪙", price: 320, rate: 0.03, copy: "银行利息永久+3%" },
-    { id: "cat", name: "招财猫", icon: "🐱", price: 460, income: 90, copy: "每月月初自动进账$90" }
+    { id: "cat", name: "招财猫", icon: "🐱", price: 460, income: 90, copy: "每月月初自动进账$90" },
+    { id: "laptop", name: "炒股笔电", icon: "💻", price: 520, hint: 1, copy: "交易所永久显示每只股票的走势" }
   ];
 
   // One-shot goods. They keep until you use them, and unlike the permanents they do
   // not take a backpack slot away from a long-term plan. The spray is the odd one out:
   // it spends itself the moment a thief catches you, so it is carried as a charge.
   const CONSUMABLES = [
-    { id: "spray", name: "防身喷雾", icon: "🧴", price: 150, spray: true, art: "luck:spray", copy: "被小偷追上时自动使用，保住钱包" },
+    { id: "spray", name: "防身喷雾", icon: "🧴", price: 150, spray: true, copy: "被小偷追上时自动使用，保住钱包" },
     { id: "energydrink", name: "提神饮料", icon: "⚡", price: 90, copy: "立刻动力+30", use: () => { state.motivation += 30; } },
     { id: "coffee", name: "三合一咖啡", icon: "☕", price: 60, copy: "立刻动力+18", use: () => { state.motivation += 18; } },
     { id: "bus", name: "飞快巴士票", icon: "🚌", price: 70, copy: "立刻动力+15，省下走路的力气", use: () => { state.motivation += 15; } },
@@ -729,7 +733,7 @@ const ROAD_CELL = 6;
     state.mealBonus = ownedBonus("meal");
     state.mathShield = false;
     state.freeFood = false;
-    state.marketHint = false;
+    state.marketHint = ownedBonus("hint") > 0;
     state.flags = { work: false, food: false, fun: false, roi: false, partTimeDrawn: false, stockBought: false };
     state.stockOffers = [];
     state.pendingStock = rollStockChanges();
@@ -1513,6 +1517,7 @@ const ROAD_CELL = 6;
     if (item.rate) state.bankRate += sign * item.rate;
     if (item.walk) state.walkDiscount = Math.min(0.6, Math.max(0, state.walkDiscount + sign * item.walk));
     if (item.meal) state.mealBonus = Math.max(0, state.mealBonus + sign * item.meal);
+    if (item.hint) state.marketHint = ownedBonus("hint") > 0;
   }
 
   function showHome() {

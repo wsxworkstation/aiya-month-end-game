@@ -592,3 +592,13 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   .hud-clock #timer-label { font-size: 22px; }
   .hud-actions { justify-self: end; }
 }
+
+/* Shop shelves: the permanent/one-shot split needs a visible line between them. */
+.shelf-title {
+  margin: 18px 0 8px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: #ffd98a;
+  text-transform: none;
+}
+.shelf-title:first-of-type { margin-top: 10px; }

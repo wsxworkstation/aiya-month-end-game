@@ -294,9 +294,9 @@ const ROAD_CELL = 6;
   };
 
   const WORK_TIERS = [
-    { id: "easy", name: "简单的活", icon: "🧹", energy: 15, pay: 400, span: 12, copy: "动力-15，工资$400。题目很简单" },
-    { id: "normal", name: "普通的活", icon: "💼", energy: 30, pay: 700, span: 25, copy: "动力-30，工资$700。题目普通" },
-    { id: "hard", name: "困难的活", icon: "🧠", energy: 50, pay: 1100, span: 40, copy: "动力-50，工资$1100。题目会让你想一下" }
+    { id: "easy", name: "简单的活", icon: "🧹", energy: 15, pay: 320, span: 12, copy: "动力-15，工资$320。题目很简单" },
+    { id: "normal", name: "普通的活", icon: "💼", energy: 30, pay: 560, span: 25, copy: "动力-30，工资$560。题目普通" },
+    { id: "hard", name: "困难的活", icon: "🧠", energy: 50, pay: 880, span: 40, copy: "动力-50，工资$880。题目会让你想一下" }
   ];
 
   const STOCKS = [
@@ -339,29 +339,39 @@ const ROAD_CELL = 6;
     { id: "queue", name: "排了两小时的队", icon: "⏳", effect: "动力+3", motivation: 3 }
   ];
 
-  const TEMP_TOOLS = [
-    { id: "shoes", name: "飞毛腿跑鞋", icon: "👟", copy: "本月走路速度+15%", use: () => { state.speedBonus += 0.15; } },
-    { id: "calculator", name: "不太作弊计算器", icon: "🧮", copy: "下一道数学题答错也不扣工资", use: () => { state.mathShield = true; } },
-    { id: "meal", name: "免费餐券", icon: "🎟️", copy: "本月食物免费", use: () => { state.freeFood = true; } },
-    { id: "bus", name: "飞快巴士票", icon: "🚌", copy: "立刻动力+12，省下走路的力气", use: () => { state.motivation += 12; } },
-    { id: "alarm", name: "超级闹钟", icon: "⏰", copy: "本月睡觉额外恢复5动力", use: () => { state.sleepBonus += 5; } },
-    { id: "paper", name: "市场小道消息", icon: "📰", copy: "交易所显示本月走势提示", use: () => { state.marketHint = true; } },
-    { id: "coin", name: "捡到的幸运硬币", icon: "🪙", copy: "永久幸运+2", use: () => { state.luck = clamp(state.luck + 2, 0, 100); } },
-    { id: "coffee", name: "三合一咖啡", icon: "☕", copy: "立刻动力+25", use: () => { state.motivation += 25; } },
-    { id: "earplug", name: "隔音耳塞", icon: "🎧", copy: "本月睡觉额外恢复8动力", use: () => { state.sleepBonus += 8; } },
-    { id: "shortcut", name: "抄近路地图", icon: "🗺️", copy: "立刻动力+18", use: () => { state.motivation += 18; } },
-    { id: "amulet", name: "转运手绳", icon: "🧿", copy: "本月幸运+5", use: () => { state.monthLuckBonus += 5; } },
-    { id: "energydrink", name: "提神饮料", icon: "⚡", copy: "本月走路速度+25%", use: () => { state.speedBonus += 0.25; } }
+// Permanent goods live in the three backpack slots until you sell them back at half
+  // price. Luck used to be the only thing the shop sold, which made it the only stat
+  // anyone thought about; it is now one item among several that change how a month
+  // actually plays out.
+  const PERMANENT_ITEMS = [
+    { id: "necklace", name: "转运项链", icon: "📿", price: 280, luck: 10, copy: "永久幸运+10" },
+    { id: "shoes", name: "飞毛腿跑鞋", icon: "👟", price: 300, speed: 0.18, art: "tool:shoes", copy: "永久走路快18%，小偷追不上" },
+    { id: "socks", name: "软底舒服袜", icon: "🧦", price: 240, walk: 0.3, copy: "走路少花30%动力" },
+    { id: "lunchbox", name: "保温饭盒", icon: "🍱", price: 260, meal: 0.35, art: "tool:meal", copy: "每餐多回35%动力" },
+    { id: "potion", name: "阿嬷的药油", icon: "🧪", price: 220, sleep: 10, copy: "每次睡觉多回10动力" },
+    { id: "coincharm", name: "铜钱串", icon: "🪙", price: 320, rate: 0.03, copy: "银行利息永久+3%" },
+    { id: "cat", name: "招财猫", icon: "🐱", price: 460, income: 90, copy: "每月月初自动进账$90" }
   ];
 
-  const LUCK_ITEMS = [
-    { id: "necklace", name: "水晶项链", icon: "📿", price: 250, luck: 10, copy: "装备时幸运+10" },
-    { id: "coincharm", name: "招财硬币", icon: "🪙", price: 160, luck: 5, copy: "装备时幸运+5" },
-    { id: "socks", name: "左右脚幸运袜", icon: "🧦", price: 180, luck: 6, copy: "装备时幸运+6" },
-    { id: "cat", name: "摇手猫挂件", icon: "🐈", price: 220, luck: 8, copy: "装备时幸运+8" },
-    { id: "potion", name: "本月一定行药水", icon: "🧪", price: 60, luck: 15, temporary: true, copy: "本月幸运+15" },
-    { id: "spray", name: "防身喷雾", icon: "🧴", price: 150, spray: true, copy: "被小偷追上时自动使用一次，保住钱包" }
+  // One-shot goods. They keep until you use them, and unlike the permanents they do
+  // not take a backpack slot away from a long-term plan. The spray is the odd one out:
+  // it spends itself the moment a thief catches you, so it is carried as a charge.
+  const CONSUMABLES = [
+    { id: "spray", name: "防身喷雾", icon: "🧴", price: 150, spray: true, art: "luck:spray", copy: "被小偷追上时自动使用，保住钱包" },
+    { id: "energydrink", name: "提神饮料", icon: "⚡", price: 90, copy: "立刻动力+30", use: () => { state.motivation += 30; } },
+    { id: "coffee", name: "三合一咖啡", icon: "☕", price: 60, copy: "立刻动力+18", use: () => { state.motivation += 18; } },
+    { id: "bus", name: "飞快巴士票", icon: "🚌", price: 70, copy: "立刻动力+15，省下走路的力气", use: () => { state.motivation += 15; } },
+    { id: "amulet", name: "转运手绳", icon: "🧿", price: 80, copy: "本月幸运+15", use: () => { state.monthLuckBonus += 15; } },
+    { id: "coin", name: "幸运硬币", icon: "🪙", price: 140, copy: "永久幸运+3", use: () => { state.luck = clamp(state.luck + 3, 0, 100); } },
+    { id: "calculator", name: "不太作弊计算器", icon: "🧮", price: 120, copy: "下一道数学题答错也不扣工资", use: () => { state.mathShield = true; } },
+    { id: "meal", name: "免费餐券", icon: "🎟️", price: 130, copy: "本月下一餐免费", use: () => { state.freeFood = true; } },
+    { id: "paper", name: "市场小道消息", icon: "📰", price: 180, copy: "本月交易所显示所有走势", use: () => { state.marketHint = true; } },
+    { id: "alarm", name: "超级闹钟", icon: "⏰", price: 90, copy: "本月睡觉额外恢复8动力", use: () => { state.sleepBonus += 8; } },
+    { id: "shortcut", name: "抄近路地图", icon: "🗺️", price: 110, copy: "本月走路省一半动力", use: () => { state.walkDiscount += 0.5; } }
   ];
+
+  const shopItem = (id) => PERMANENT_ITEMS.find(item => item.id === id) || CONSUMABLES.find(item => item.id === id);
+  const shopArt = (item) => item.art || (CONSUMABLES.includes(item) ? `tool:${item.id}` : `luck:${item.id}`);
 
   const PART_TIME = [
     { id: "mamak", name: "Mamak店帮手", icon: "🍽️", pay: 120 },
@@ -444,12 +454,12 @@ const ROAD_CELL = 6;
     "命运卡": FATE_CARDS,
     "工作卡": WORK_TIERS.map(tier => ({ id: tier.id, name: tier.name, icon: tier.icon, copy: tier.copy })),
     "兼职卡": PART_TIME,
-    "工具卡": TEMP_TOOLS,
+    "一次性物品": CONSUMABLES,
     "食物卡": FOODS,
     "娱乐卡": FUN_CARDS,
     "股票卡": STOCKS,
     "ROI卡": ROI_TYPES,
-    "幸运物品": LUCK_ITEMS
+    "永久物品": PERMANENT_ITEMS
   };
 
   let state = null;
@@ -502,6 +512,8 @@ const ROAD_CELL = 6;
       energySpent: 0,
       walkCarry: 0,
       mealsEaten: 0,
+      walkDiscount: 0,
+      mealBonus: 0,
       workDone: 0,
       sleptLastMonth: true,
       pendingEnergyPenalty: 0,
@@ -529,6 +541,8 @@ const ROAD_CELL = 6;
       stockPrices: Object.fromEntries(STOCKS.map(item => [item.id, { price: item.price, change: 0 }])),
       holdings: {},
       stockOffers: [],
+      pendingStock: {},
+      stockTips: {},
       shopOffers: [],
       pendingROI: [],
       monthLog: [],
@@ -537,10 +551,16 @@ const ROAD_CELL = 6;
     };
   }
 
+  // Sums one field across whatever permanent goods you own.
+  function ownedBonus(field) {
+    if (!state) return 0;
+    return state.permanentItems.reduce((sum, id) => sum + (PERMANENT_ITEMS.find(e => e.id === id)?.[field] || 0), 0);
+  }
+
   function effectiveLuck() {
     if (!state) return 50;
     const itemLuck = state.permanentItems.reduce((sum, itemId) => {
-      const item = LUCK_ITEMS.find(entry => entry.id === itemId);
+      const item = PERMANENT_ITEMS.find(entry => entry.id === itemId);
       return sum + (item?.luck || 0);
     }, 0);
     return clamp(state.luck + state.monthLuckBonus + itemLuck, 0, 100);
@@ -698,22 +718,31 @@ const ROAD_CELL = 6;
     state.thieves = [];
     state.thiefRespawn = 0;
     state.shake = 0;
-    state.bankRate = 0.05;
+    // Permanent goods are folded in here rather than read at each use site, so the
+    // month always starts from "base + what you own" and temporary boosts stack on top.
+    state.bankRate = 0.05 + ownedBonus("rate");
     state.rentDiscount = 0;
     state.monthLuckBonus = 0;
-    state.speedBonus = 0;
-    state.sleepBonus = 0;
+    state.speedBonus = ownedBonus("speed");
+    state.sleepBonus = ownedBonus("sleep");
+    state.walkDiscount = Math.min(0.6, ownedBonus("walk"));
+    state.mealBonus = ownedBonus("meal");
     state.mathShield = false;
     state.freeFood = false;
     state.marketHint = false;
     state.flags = { work: false, food: false, fun: false, roi: false, partTimeDrawn: false, stockBought: false };
-    state.tempTools = [];
     state.stockOffers = [];
-    // The spray answers the thief, so once thieves exist it is always on the shelf;
-    // leaving it to a 3-of-6 shuffle meant the counter was missing half the months.
-    const staple = thiefCountForMonth() ? LUCK_ITEMS.filter(item => item.spray) : [];
-    const rest = shuffle(LUCK_ITEMS.filter(item => !staple.includes(item)));
-    state.shopOffers = [...staple, ...rest].slice(0, 3).map(item => item.id);
+    state.pendingStock = rollStockChanges();
+    state.stockTips = {};
+    // Two shelves, restocked every month: three permanents and four one-shots. The
+    // spray answers the thief, so once thieves exist it is always on the shelf;
+    // leaving it to a shuffle meant the counter was missing it half the months.
+    const staple = thiefCountForMonth() ? CONSUMABLES.filter(item => item.spray) : [];
+    const rest = shuffle(CONSUMABLES.filter(item => !staple.includes(item)));
+    state.shopOffers = {
+      permanent: shuffle(PERMANENT_ITEMS.filter(item => !state.permanentItems.includes(item.id))).slice(0, 3).map(item => item.id),
+      consumable: [...staple, ...rest].slice(0, 4).map(item => item.id)
+    };
     state.monthLog = [];
     state.scene = "town";
     state.interiorId = null;
@@ -732,6 +761,11 @@ const ROAD_CELL = 6;
   function beginMonth() {
     resetMonthlyState();
     resolveDueROI();
+    const passive = ownedBonus("income");
+    if (passive) {
+      state.wallet += passive;
+      state.monthLog.push({ label: "招财猫招来的钱", amount: passive, positive: true });
+    }
     updateHUD();
     if (state.month === THIEF.firstMonth && !state.thiefWarned) {
       state.thiefWarned = true;
@@ -830,8 +864,9 @@ const ROAD_CELL = 6;
     // Rent is taken from the bank, so falling short matters - but the old banner sat
     // over the map and covered the building labels. Mark the bank tile instead.
     const rent = currentRent();
-    $(".hud-stat.bank").classList.toggle("short", state.bank < rent);
-    $("#bank-label").title = state.bank < rent ? `银行余额不足以支付本月房租（${money(rent)}）` : "";
+    // Rent now falls back to the wallet, so the warning is about combined funds.
+    $(".hud-stat.bank").classList.toggle("short", combinedFunds() < rent);
+    $("#bank-label").title = combinedFunds() < rent ? `钱包加银行都不够付本月房租（${money(rent)}）` : "";
     $("#bag-count").textContent = state.permanentItems.length + state.tempTools.length + state.sprayCharges;
     const flags = state.flags;
     setCheck("work", flags.work);
@@ -893,9 +928,13 @@ const ROAD_CELL = 6;
     return `${String(Math.floor(whole / 60)).padStart(2, "0")}:${String(whole % 60).padStart(2, "0")}`;
   }
 
+  // Rent climbs $35 a month. A flat $220 against a first month that already cleared
+  // $1,600 meant the back half of the year had nothing to push against; by month 12
+  // the landlord wants $605 and the shop wants the rest.
   function currentRent() {
     const house = HOUSES.find(item => item.id === state.houseId);
-    return Math.round(house.rent * (1 - state.rentDiscount));
+    const base = house.rent + (state.month - 1) * 35;
+    return Math.round(base * (1 - state.rentDiscount));
   }
 
 
@@ -989,7 +1028,7 @@ const ROAD_CELL = 6;
     state.player.moving = length > 0.08;
 
     // Charge for ground actually covered, so walking into a wall is free.
-    state.walkCarry += Math.hypot(state.player.x - fromX, state.player.y - fromY);
+    state.walkCarry += Math.hypot(state.player.x - fromX, state.player.y - fromY) * (1 - Math.min(0.75, state.walkDiscount || 0));
     if (state.walkCarry >= ENERGY.pixelsPerPoint) {
       const points = Math.floor(state.walkCarry / ENERGY.pixelsPerPoint);
       state.walkCarry -= points * ENERGY.pixelsPerPoint;
@@ -1151,34 +1190,44 @@ const ROAD_CELL = 6;
     }));
   }
 
+  // A tip is only worth having if it is true, so it reads this month's already-decided
+  // move rather than last month's history.
+  function stockTipFor(id) {
+    const change = (state.pendingStock || {})[id] ?? 0;
+    if (change >= 12) return { text: "会大涨", tone: "good" };
+    if (change >= 4) return { text: "会涨一点", tone: "good" };
+    if (change > -4) return { text: "大概不动", tone: "flat" };
+    if (change > -12) return { text: "会跌一点", tone: "bad" };
+    return { text: "会大跌", tone: "bad" };
+  }
+
   function showPartTime() {
     if (state.flags.partTimeDrawn) { simpleMessage("这个月抽过了", "公告板只剩『免费加班』。", "📌"); return; }
     state.flags.partTimeDrawn = true;
     const jobs = shuffle(PART_TIME).slice(0, 3);
-    const offers = jobs.map(job => ({ job, tool: random(TEMP_TOOLS) }));
+    const tipped = shuffle(STOCKS).slice(0, 3);
+    const offers = jobs.map((job, index) => ({ job, stock: tipped[index] || tipped[0] }));
 
     runCardDraw({
       eyebrow: "兼职公告板",
       title: "撕一张",
-      hint: "撕下哪张做哪份，附送一件工具。",
+      hint: "撕下哪张做哪份。工友还会顺便透露一只股票的风声。",
       candidates: offers,
-      faceUp: ({ job, tool }) => `<div class="offer-pair">
+      faceUp: ({ job, stock }) => `<div class="offer-pair">
         ${cardMarkup(job, "choice", "", `parttime:${job.id}`)}
-        ${cardMarkup(tool, "good", "附赠工具", `tool:${tool.id}`)}
+        ${cardMarkup({ id: stock.id, name: stock.name, icon: stock.icon, copy: `工友说它这个月${stockTipFor(stock.id).text}` }, "stock", "内幕消息", `stock:${stock.id}`)}
       </div>`,
       stingFor: ({ job }) => job.pay >= 160 ? 880 : job.pay >= 120 ? 620 : 380,
       confirmLabel: "接下这份工",
-      onConfirm: ({ job, tool }) => {
+      onConfirm: ({ job, stock }) => {
         collect("兼职卡", job.id);
-        collect("工具卡", tool.id);
         state.wallet += job.pay;
-        if (state.tempTools.length < 3) state.tempTools.push(tool.id);
-        else showToast("临时工具栏已满，新工具没地方放");
+        state.stockTips[stock.id] = true;
         state.monthLog.push({ label: `兼职：${job.name}`, amount: job.pay, positive: true });
         if (!spendEnergy(ENERGY.partTime)) return;
         closeModal();
         updateHUD();
-        showToast(`兼职完成，得到${money(job.pay)}和${tool.name}`);
+        showToast(`兼职完成，得到${money(job.pay)}，还听到${stock.name}的风声`);
       }
     });
     updateHUD();
@@ -1221,7 +1270,7 @@ const ROAD_CELL = 6;
         confirmLabel: "吃饱了",
         onConfirm: food => {
           collect("食物卡", food.id);
-          const gained = Math.round(food.motivation * rate);
+          const gained = Math.round(food.motivation * rate * (1 + (state.mealBonus || 0)));
           state.motivation += gained;
           state.luck = clamp(state.luck + (food.luck || 0), 0, 100);
           state.wallet += food.refund || 0;
@@ -1312,7 +1361,8 @@ const ROAD_CELL = 6;
       <p class="modal-intro">本月只能买一种，最多10股。持有的随时可卖。</p>
       <div class="card-grid">${offers.map(item => {
         const price = state.stockPrices[item.id];
-        const hint = state.marketHint ? (price.change >= 0 ? "小道消息：市场气氛不错" : "小道消息：最近有点冷") : "趋势每月更新";
+        const known = state.stockTips[item.id] || state.marketHint;
+        const hint = known ? `内幕：这个月${stockTipFor(item.id).text}` : "趋势每月更新";
         return cardMarkup(item, "stock", `${money(price.price)}/股 · ${hint}`, `stock:${item.id}`);
       }).join("")}</div>
       <h3>我的持仓</h3>
@@ -1396,47 +1446,73 @@ const ROAD_CELL = 6;
   }
 
   function showShop() {
-    const offers = state.shopOffers.map(id => LUCK_ITEMS.find(item => item.id === id));
-    openModal(`<p class="eyebrow">包好运杂货铺</p><h2>老板说：不灵不退款</h2><div class="status-strip"><span class="status-chip">买一件 动力-${ENERGY.shop}</span></div>
-      <p class="modal-intro">永久物品占背包，药水只管本月。只收现金。</p>
+    const offers = state.shopOffers || {};
+    const permanent = (offers.permanent || []).map(shopItem).filter(Boolean);
+    const consumable = (offers.consumable || []).map(shopItem).filter(Boolean);
+    const shelf = (items, kind) => items.map(item => {
+      const owned = kind === "permanent" && state.permanentItems.includes(item.id);
+      const full = kind === "permanent" ? state.permanentItems.length >= 3
+        : !item.spray && state.tempTools.length >= 3;
+      const tooPoor = state.wallet < item.price;
+      const note = owned ? "已拥有"
+        : tooPoor ? `${money(item.price)} · 钱不够`
+        : full ? `${money(item.price)} · 背包满了`
+        : `${money(item.price)} · ${kind === "permanent" ? "永久" : "一次性"}`;
+      const tone = owned || tooPoor || full ? (owned ? "owned" : "unaffordable") : "choice";
+      return cardMarkup(item, tone, note, shopArt(item));
+    }).join("");
+
+    openModal(`<p class="eyebrow">包好运杂货铺</p><h2>老板说：不灵不退款</h2>
       <div class="status-strip">
         <span class="status-chip">钱包 ${money(state.wallet)}</span>
-        <span class="status-chip">永久背包 ${state.permanentItems.length}/3</span>
-        <span class="status-chip">当前幸运 ${effectiveLuck()}</span>
+        <span class="status-chip">永久 ${state.permanentItems.length}/3</span>
+        <span class="status-chip">一次性 ${state.tempTools.length}/3</span>
+        <span class="status-chip">买一件 动力-${ENERGY.shop}</span>
       </div>
-      <div class="card-grid">${offers.map(item => {
-        const owned = !item.temporary && !item.spray && state.permanentItems.includes(item.id);
-        const tooPoor = state.wallet < item.price;
-        const note = owned ? "已拥有" : tooPoor ? `${money(item.price)} · 钱不够` : `${money(item.price)} · ${item.temporary ? "本月有效" : "永久装备"}`;
-        return cardMarkup(item, owned ? "owned" : tooPoor ? "unaffordable" : "choice", note, `luck:${item.id}`);
-      }).join("")}</div>`);
-    $$('.game-card').forEach(button => button.addEventListener("click", () => buyLuckItem(button.dataset.cardId)));
+      <h3 class="shelf-title">永久物品 · 买了一直有效</h3>
+      <div class="card-grid">${shelf(permanent, "permanent")}</div>
+      <h3 class="shelf-title">一次性 · 放进背包，要用才用</h3>
+      <div class="card-grid">${shelf(consumable, "consumable")}</div>`);
+    $$('.game-card').forEach(button => button.addEventListener("click", () => buyShopItem(button.dataset.cardId)));
   }
 
-  function buyLuckItem(id) {
-    const item = LUCK_ITEMS.find(entry => entry.id === id);
+  function buyShopItem(id) {
+    const item = shopItem(id);
+    if (!item) return;
+    const permanent = PERMANENT_ITEMS.includes(item);
     if (state.wallet < item.price) { showToast("钱包现金不够"); return; }
-    // The spray is a charge you carry, not a trinket that eats a backpack slot.
-    if (item.spray) {
-      state.wallet -= item.price;
-      state.sprayCharges += 1;
-      collect("幸运物品", item.id);
-      if (!spendEnergy(ENERGY.shop)) return;
-      updateHUD();
-      showShop();
-      showToast(`买到${item.name}`);
-      return;
-    }
-    if (!item.temporary && state.permanentItems.length >= 3) { showToast("永久背包已经满了，先卖掉一件"); return; }
-    if (!item.temporary && state.permanentItems.includes(id)) { showToast("同名物品效果不能叠加"); return; }
+    if (permanent && state.permanentItems.includes(id)) { showToast("同名物品效果不能叠加"); return; }
+    if (permanent && state.permanentItems.length >= 3) { showToast("永久背包满了，先卖掉一件"); return; }
+    if (!permanent && !item.spray && state.tempTools.length >= 3) { showToast("一次性背包满了，先用掉一件"); return; }
+
     state.wallet -= item.price;
-    if (item.temporary) state.monthLuckBonus += item.luck;
-    else state.permanentItems.push(item.id);
-    collect("幸运物品", item.id);
+    if (permanent) {
+      state.permanentItems.push(item.id);
+      applyPermanent(item);
+      collect("永久物品", item.id);
+    } else if (item.spray) {
+      state.sprayCharges += 1;
+      collect("一次性物品", item.id);
+    } else {
+      state.tempTools.push(item.id);
+      collect("一次性物品", item.id);
+    }
+    // spendEnergy can end the month on the spot, and re-opening the shop over the
+    // month report is how you get stranded in a building. Bail out if it did.
     if (!spendEnergy(ENERGY.shop)) return;
     updateHUD();
     showShop();
     showToast(`买到${item.name}`);
+  }
+
+  // A permanent bought mid-month should work for the rest of that month too, not wait
+  // for the next reset to be folded in.
+  function applyPermanent(item, sign = 1) {
+    if (item.speed) state.speedBonus += sign * item.speed;
+    if (item.sleep) state.sleepBonus += sign * item.sleep;
+    if (item.rate) state.bankRate += sign * item.rate;
+    if (item.walk) state.walkDiscount = Math.min(0.6, Math.max(0, state.walkDiscount + sign * item.walk));
+    if (item.meal) state.mealBonus = Math.max(0, state.mealBonus + sign * item.meal);
   }
 
   function showHome() {
@@ -1453,25 +1529,26 @@ const ROAD_CELL = 6;
     const sprayLine = state.sprayCharges > 0
       ? `<div class="status-strip"><span class="status-chip">🧴 防身喷雾 x${state.sprayCharges} · 被追上时自动使用</span></div>`
       : "";
-    const permanent = state.permanentItems.map(id => LUCK_ITEMS.find(item => item.id === id));
-    const temporary = state.tempTools.map(id => TEMP_TOOLS.find(item => item.id === id));
-    openModal(`<p class="eyebrow">背包</p><h2>永久幸运物品 ${permanent.length}/3</h2>${sprayLine}
+    const permanent = state.permanentItems.map(id => PERMANENT_ITEMS.find(item => item.id === id));
+    const temporary = state.tempTools.map(id => CONSUMABLES.find(item => item.id === id));
+    openModal(`<p class="eyebrow">背包</p><h2>永久物品 ${permanent.length}/3</h2>${sprayLine}
       <div class="inventory-grid">${[0, 1, 2].map(index => permanent[index] ? `<div class="inventory-slot"><strong>${permanent[index].icon} ${permanent[index].name}</strong><p>${permanent[index].copy}</p><button class="pixel-btn" data-sell-item="${permanent[index].id}">卖出 ${money(permanent[index].price * .5)}</button></div>` : `<div class="inventory-slot empty">空位</div>`).join("")}</div>
-      <h3 style="margin-top:24px">本月临时工具 ${temporary.length}/3</h3>
+      <h3 style="margin-top:24px">一次性物品 ${temporary.length}/3</h3>
       <div class="inventory-grid">${[0, 1, 2].map(index => temporary[index] ? `<div class="inventory-slot"><strong>${temporary[index].icon} ${temporary[index].name}</strong><p>${temporary[index].copy}</p><button class="pixel-btn primary" data-use-tool="${index}">使用</button></div>` : `<div class="inventory-slot empty">空位</div>`).join("")}</div>`);
     $$('[data-sell-item]').forEach(button => button.addEventListener("click", () => sellItem(button.dataset.sellItem)));
     $$('[data-use-tool]').forEach(button => button.addEventListener("click", () => useTool(Number(button.dataset.useTool))));
   }
 
   function sellItem(id) {
-    const item = LUCK_ITEMS.find(entry => entry.id === id);
+    const item = PERMANENT_ITEMS.find(entry => entry.id === id);
     state.permanentItems.splice(state.permanentItems.indexOf(id), 1);
+    applyPermanent(item, -1);
     state.wallet += Math.round(item.price * 0.5);
     updateHUD(); showBag();
   }
 
   function useTool(index) {
-    const id = state.tempTools[index], tool = TEMP_TOOLS.find(item => item.id === id);
+    const id = state.tempTools[index], tool = CONSUMABLES.find(item => item.id === id);
     tool.use();
     state.tempTools.splice(index, 1);
     updateHUD(); showBag(); showToast(`${tool.name}已使用`);
@@ -1482,17 +1559,32 @@ const ROAD_CELL = 6;
     $("#message-ok").addEventListener("click", closeModal);
   }
 
-  function updateStocks() {
-    const changes = {};
+  // This month's move is decided at the START of the month and applied at the end, so
+  // a tip bought from the notice board can name what is actually going to happen
+  // rather than describing last month and hoping.
+  function rollStockChanges() {
+    const rolled = {};
     STOCKS.forEach(stock => {
+      // Symmetric on purpose. The old band averaged +2.5% a month, so simply holding
+      // anything printed money; now the edge has to come from the tip you were given.
       const strong = Math.random() < 0.18;
-      const min = strong ? -20 : -10, max = strong ? 25 : 15;
-      const change = Math.floor(min + Math.random() * (max - min + 1));
+      const min = strong ? -25 : -12, max = strong ? 24 : 12;
+      rolled[stock.id] = Math.floor(min + Math.random() * (max - min + 1));
+    });
+    return rolled;
+  }
+
+  function updateStocks() {
+    const changes = state.pendingStock && Object.keys(state.pendingStock).length
+      ? state.pendingStock
+      : rollStockChanges();
+    STOCKS.forEach(stock => {
       const entry = state.stockPrices[stock.id];
+      const change = changes[stock.id] ?? 0;
       entry.price = Math.max(5, Math.round(entry.price * (1 + change / 100)));
       entry.change = change;
-      changes[stock.id] = change;
     });
+    state.pendingStock = null;   // next month rolls fresh when it begins
     return changes;
   }
 
@@ -1516,18 +1608,23 @@ const ROAD_CELL = 6;
     state.pendingEnergyPenalty = state.flags.food ? 0 : 10;
     if (state.pendingEnergyPenalty) report.push({ label: "本月一餐都没吃", text: `下个月开局再扣 ${state.pendingEnergyPenalty} 动力` });
 
+    // Rent used to come out of the bank alone, so you could go bankrupt holding $2,860
+    // in cash. The landlord takes the bank first, then whatever is in your pocket, and
+    // only what is still missing after that turns into debt.
     const rent = currentRent();
-    if (state.bank >= rent) {
-      state.bank -= rent;
+    const fromBank = Math.min(state.bank, rent);
+    state.bank -= fromBank;
+    const fromWallet = Math.min(state.wallet, rent - fromBank);
+    state.wallet -= fromWallet;
+    const shortfall = rent - fromBank - fromWallet;
+    if (shortfall <= 0) {
       state.missedRentStreak = 0;
-      report.push({ label: "自动支付房租", amount: -rent, positive: false });
+      const where = fromWallet > 0 ? (fromBank > 0 ? `银行${money(fromBank)} + 钱包${money(fromWallet)}` : "从钱包掏的现金") : "银行自动扣";
+      report.push({ label: "支付房租", amount: -rent, text: where, positive: false });
     } else {
-      const paid = state.bank;
-      const shortfall = rent - paid;
-      state.bank = 0;
       state.debt += shortfall;
       state.missedRentStreak += 1;
-      report.push({ label: `房租不足（连续${state.missedRentStreak}月）`, amount: -paid, text: `新增债务${money(shortfall)}`, positive: false });
+      report.push({ label: `房租不足（连续${state.missedRentStreak}月）`, amount: -(fromBank + fromWallet), text: `新增债务${money(shortfall)}`, positive: false });
     }
 
     if (state.debt > 0) {
@@ -1593,10 +1690,11 @@ const ROAD_CELL = 6;
     $("#ending-assets").textContent = money(assets);
   }
 
-  const COLLECTION_ART_PREFIXES = { "命运卡": "fate", "工作卡": "work", "兼职卡": "parttime", "工具卡": "tool", "食物卡": "food", "娱乐卡": "fun", "股票卡": "stock", "ROI卡": "roi", "幸运物品": "luck" };
+  const COLLECTION_ART_PREFIXES = { "命运卡": "fate", "工作卡": "work", "兼职卡": "parttime", "一次性物品": "tool", "食物卡": "food", "娱乐卡": "fun", "股票卡": "stock", "ROI卡": "roi", "永久物品": "luck" };
 
   function collectionArtKey(category, item) {
-    return `${COLLECTION_ART_PREFIXES[category]}:${item.id}`;
+    // Some goods borrow another card's picture (the shoes are drawn on the tool sheet).
+    return item.art || `${COLLECTION_ART_PREFIXES[category]}:${item.id}`;
   }
 
   function collectionCardClass(category, item) {
@@ -2223,7 +2321,13 @@ const ROAD_CELL = 6;
       spray: state.sprayCharges,
       thiefRespawn: Math.round((state.thiefRespawn || 0) * 10) / 10,
       wanted: thiefCountForMonth(),
-      thievesType: Array.isArray(state.thieves) ? "array" : typeof state.thieves
+      thievesType: Array.isArray(state.thieves) ? "array" : typeof state.thieves,
+      rent: currentRent(),
+      items: [...state.permanentItems],
+      tools: [...state.tempTools],
+      tips: Object.keys(state.stockTips || {}),
+      pendingStock: { ...(state.pendingStock || {}) },
+      stockChange: Object.fromEntries(STOCKS.map(item => [item.id, state.stockPrices[item.id].change]))
     };
   }
 

@@ -2,6 +2,48 @@
 
 Updated: 2026-09-20
 
+## Codex illustrated title-cover pass (2026-09-20)
+
+### Readability correction after user review
+
+The user found the first illustrated cover tiring to look at and specifically
+said `哎呀` was unclear. Preserve this corrective pass:
+
+- Removed the dotted/halftone overlay and disabled decorative sparkles.
+- Reduced cover-art saturation and contrast, then added a calmer cream reading
+  gradient behind only the title area.
+- Removed the `WALLET · WORK · LUCK` kicker.
+- Simplified the badge to `12个月 · 别破产`.
+- Changed `哎呀！` into a small, solid coral sticker with navy text and a thin
+  edge. The main title is about 15% smaller, has looser tracking and only one
+  subtle light edge instead of multiple competing shadows.
+- Unified both secondary buttons to cream; only the primary action stays yellow.
+  Button shadows and hover movement are lighter.
+- Adjusted the same hierarchy separately for portrait and short landscape.
+
+Do not restore the halftone texture, English kicker, green save button, giant
+main title or layered title shadows without explicit user approval.
+
+- Replaced only the title-screen presentation. Gameplay, map geometry, balance,
+  save format, card logic and `game.js` are unchanged.
+- Added `assets/art/title-cover-desktop.png` (1672x941) and
+  `assets/art/title-cover-mobile.png` (941x1672). Both deliberately contain no
+  baked text or UI; desktop and portrait use separate compositions so the
+  protagonist is not lost to responsive cropping.
+- Rebuilt the `#title-screen` markup in `index.html` while preserving the three
+  existing button IDs and their original handlers: `#new-game-btn`,
+  `#resume-btn`, and `#collection-btn`.
+- Added an isolated cover section at the end of `styles.css`: cinematic town
+  art, readable title lockup, full-width primary action, save/collection
+  secondary actions, portrait and short-landscape layouts, entrance motion,
+  hover/press feedback, focus states and reduced-motion support.
+- Added `title-cover.js`, which only provides subtle pointer parallax and a
+  local button ripple. It does not read or mutate game state.
+- Verified at the default desktop viewport, 390x844 portrait and 844x390
+  landscape. All buttons are in-bounds, the collection opens correctly, both
+  scripts pass `node --check`, `scripts/check-layout.js` passes, and the browser
+  console has no warnings/errors.
+
 ## Codex card-art delivery (2026-09-20)
 
 Codex generated the 64 missing card illustrations as four new 4x4 atlases:

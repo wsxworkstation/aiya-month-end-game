@@ -3,30 +3,38 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#17152d">
+  <meta name="theme-color" content="#73bee6">
   <title>哎呀，又月底了呀</title>
-  <link rel="stylesheet" href="styles.css?v=23">
+  <link rel="stylesheet" href="styles.css?v=25">
 </head>
 <body>
   <main id="app" aria-label="哎呀，又月底了呀游戏">
     <section id="title-screen" class="screen title-screen">
-      <div class="title-cloud cloud-a"></div>
-      <div class="title-cloud cloud-b"></div>
-      <div class="title-building building-a"></div>
-      <div class="title-building building-b"></div>
-      <div class="title-panel pixel-panel">
-        <p class="eyebrow">12个月 · 别破产</p>
-        <h1>哎呀，<br><span>又月底了呀</span></h1>
-        <p class="subtitle">动力有限。花在哪里，你自己决定。</p>
-        <div class="title-actions">
-          <button id="new-game-btn" class="pixel-btn primary">开始新生活</button>
-          <button id="resume-btn" class="pixel-btn secondary" hidden>继续刚才的月份</button>
-          <button id="collection-btn" class="pixel-btn ghost">卡片图鉴</button>
-        </div>
-        <p class="controls-hint">WASD 走路 · E 互动</p>
+      <div class="title-art" aria-hidden="true"></div>
+      <div class="title-light" aria-hidden="true"></div>
+      <div class="title-sparkles" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i>
       </div>
-      <div class="pixel-person title-person" aria-hidden="true">
-        <span class="hair"></span><span class="face"></span><span class="body"></span><span class="leg left"></span><span class="leg right"></span>
+      <div class="title-layout">
+        <div class="title-badge" aria-label="十二个月，别破产">
+          <strong>12</strong><span>个月 · 别破产</span>
+        </div>
+        <div class="title-lockup">
+          <h1><small>哎呀！</small><span>又月底了呀</span></h1>
+          <p class="subtitle">跑过今天，付掉房租，明天继续。</p>
+        </div>
+        <div class="title-actions">
+          <button id="new-game-btn" class="title-button title-button-main">
+            <span class="button-copy"><b>开始新生活</b><small>从第 1 月出发</small></span><span class="button-arrow">→</span>
+          </button>
+          <button id="resume-btn" class="title-button title-button-save" hidden>
+            <span class="button-icon">↻</span><span class="button-copy"><b>继续游戏</b><small>回到刚才的月份</small></span>
+          </button>
+          <button id="collection-btn" class="title-button title-button-book">
+            <span class="button-icon">▦</span><span class="button-copy"><b>卡片图鉴</b><small>看看收集进度</small></span>
+          </button>
+        </div>
+        <p class="controls-hint"><span>WASD</span> 走路 <i></i> <span>E</span> 互动</p>
       </div>
     </section>
 
@@ -115,6 +123,7 @@
     </button>
   </template>
 
+  <script src="title-cover.js?v=1"></script>
   <script src="game.js?v=23"></script>
 </body>
 </html>

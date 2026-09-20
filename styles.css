@@ -602,3 +602,308 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   text-transform: none;
 }
 .shelf-title:first-of-type { margin-top: 10px; }
+
+/* --- Illustrated title cover -------------------------------------------------
+   This is deliberately isolated from the game HUD and canvas. The cover owns its
+   own responsive art and interaction polish; no gameplay layout depends on it. */
+.title-screen {
+  --cover-x: 0;
+  --cover-y: 0;
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  color: #201a36;
+  background: #73bee6;
+  isolation: isolate;
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+}
+
+.title-art {
+  position: absolute;
+  z-index: 0;
+  inset: -18px;
+  background: url("assets/art/title-cover-desktop.png") center / cover no-repeat;
+  transform: translate(calc(var(--cover-x) * -8px), calc(var(--cover-y) * -5px)) scale(1.035);
+  transition: transform .18s ease-out;
+  filter: saturate(.84) contrast(.92) brightness(1.02);
+  will-change: transform;
+  animation: title-art-arrive 1.1s cubic-bezier(.2,.75,.2,1) both;
+}
+
+.title-light {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255,250,228,.97) 0%, rgba(255,248,222,.9) 26%, rgba(255,247,220,.55) 42%, rgba(255,247,220,.08) 57%, transparent 70%),
+    linear-gradient(180deg, rgba(255,255,255,.16), transparent 58%, rgba(18,22,48,.2));
+}
+
+.title-light::after {
+  display: none;
+  content: "";
+}
+
+.title-layout {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  width: min(530px, 47vw);
+  height: 100%;
+  min-height: 100%;
+  padding: clamp(28px, 5vw, 74px);
+  transform: translate(calc(var(--cover-x) * 3px), calc(var(--cover-y) * 2px));
+  transition: transform .2s ease-out;
+}
+
+.title-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: clamp(18px, 3vh, 30px);
+  padding: 6px 11px 6px 7px;
+  color: #fff6d7;
+  background: #201a36;
+  border: 3px solid #201a36;
+  border-radius: 7px;
+  box-shadow: 3px 3px 0 #e46b4c;
+  transform: rotate(-1.5deg);
+  animation: title-badge-arrive .55s .15s cubic-bezier(.2,.9,.3,1.2) both;
+}
+
+.title-badge strong {
+  display: grid;
+  place-items: center;
+  width: 35px;
+  height: 35px;
+  color: #201a36;
+  background: #ffd352;
+  border-radius: 4px;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.title-badge span { font-size: 10px; line-height: 1.25; font-weight: 900; letter-spacing: .03em; white-space: nowrap; }
+.title-lockup { position: relative; animation: title-copy-arrive .68s .25s cubic-bezier(.16,.84,.3,1) both; }
+.title-kicker { margin: 0 0 8px; color: #31506f; font-size: 10px; font-weight: 900; letter-spacing: .18em; }
+
+.title-lockup h1 {
+  margin: 0;
+  color: #201a36;
+  font-size: clamp(44px, 4.5vw, 66px);
+  line-height: .96;
+  letter-spacing: -.045em;
+  font-weight: 950;
+  text-wrap: balance;
+  filter: drop-shadow(2px 2px 0 #fff8e6);
+}
+
+.title-lockup h1 small {
+  display: inline-block;
+  margin: 0 0 10px 1px;
+  padding: 4px 10px 5px;
+  color: #201a36;
+  background: #e76d52;
+  border: 2px solid #201a36;
+  border-radius: 4px;
+  box-shadow: 3px 3px 0 #201a36;
+  font-size: .36em;
+  line-height: 1;
+  letter-spacing: -.04em;
+  transform: rotate(-2deg);
+  transform-origin: left bottom;
+}
+
+.title-lockup h1 span { display: block; color: #201a36; text-shadow: 0 2px 0 rgba(255,255,255,.8); white-space: nowrap; }
+.title-lockup .subtitle {
+  display: inline-block;
+  margin: clamp(14px, 2.5vh, 22px) 0 0;
+  padding: 8px 11px;
+  color: #312944;
+  background: rgba(255,250,232,.93);
+  border: 2px solid #201a36;
+  border-radius: 3px;
+  box-shadow: 2px 2px 0 #201a36;
+  font-size: clamp(11px, 1.05vw, 14px);
+  line-height: 1.35;
+  font-weight: 900;
+  transform: rotate(-.6deg);
+}
+
+.title-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  width: 100%;
+  max-width: 470px;
+  margin: clamp(22px, 4vh, 34px) 0 17px;
+  animation: title-actions-arrive .7s .42s cubic-bezier(.16,.84,.3,1) both;
+}
+
+.title-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 11px;
+  min-width: 0;
+  min-height: 54px;
+  overflow: hidden;
+  padding: 9px 13px;
+  color: #201a36;
+  background: #fff7df;
+  border: 3px solid #201a36;
+  border-radius: 9px;
+  box-shadow: 0 4px 0 #201a36, 0 9px 18px rgba(28,25,51,.12);
+  text-align: left;
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  isolation: isolate;
+}
+
+.title-button::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 18%, rgba(255,255,255,.56) 44%, transparent 68%);
+  transform: translateX(-120%);
+  transition: transform .5s ease;
+}
+
+.title-button::after {
+  content: "";
+  position: absolute;
+  left: var(--press-x, 50%);
+  top: var(--press-y, 50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.72);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0);
+}
+
+.title-button:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #201a36, 0 12px 22px rgba(28,25,51,.15); filter: saturate(1.04); }
+.title-button:hover::before { transform: translateX(120%); }
+.title-button:active { transform: translateY(4px); box-shadow: 0 2px 0 #201a36; }
+.title-button:focus-visible { outline: 4px solid #fff; outline-offset: 4px; }
+.title-button.pressed::after { animation: title-button-ripple .55s ease-out; }
+
+.title-button-main {
+  grid-column: 1 / -1;
+  min-height: 68px;
+  justify-content: space-between;
+  padding: 10px 17px;
+  background: linear-gradient(135deg, #ffdc62, #f2b84e);
+  box-shadow: 0 4px 0 #c76548, 0 10px 20px rgba(28,25,51,.14);
+}
+
+/* Wins over the old phone rule that used to collapse #new-game-btn back to one
+   grid column. The cover's primary action must stay full-width at every size. */
+.title-actions #new-game-btn { grid-column: 1 / -1; }
+
+.title-button-main:hover { box-shadow: 0 6px 0 #c76548, 0 13px 24px rgba(28,25,51,.16); }
+.title-button-main:active { box-shadow: 0 2px 0 #c76548; }
+.title-button-save, .title-button-book { background: rgba(255,249,232,.96); }
+.title-actions #resume-btn[hidden] + #collection-btn { grid-column: 1 / -1; }
+.button-copy { display: flex; min-width: 0; flex-direction: column; line-height: 1.1; }
+.button-copy b { overflow: hidden; font-size: 15px; font-weight: 950; white-space: nowrap; text-overflow: ellipsis; }
+.title-button-main .button-copy b { font-size: 20px; }
+.button-copy small { margin-top: 4px; color: rgba(32,26,54,.68); font-size: 9px; font-weight: 800; letter-spacing: .02em; }
+.button-arrow { font-size: 29px; font-weight: 900; transition: transform .16s ease; }
+.title-button-main:hover .button-arrow { transform: translateX(5px); }
+.button-icon { display: grid; place-items: center; flex: 0 0 auto; width: 29px; height: 29px; border: 2px solid #201a36; border-radius: 5px; font-size: 17px; font-weight: 950; }
+
+.title-layout .controls-hint { display: flex; align-items: center; gap: 7px; margin: 0; color: #3c4f66; font-size: 10px; font-weight: 900; letter-spacing: .04em; }
+.title-layout .controls-hint span { padding: 3px 6px; color: #fff5d6; background: #201a36; border-radius: 4px; box-shadow: 2px 2px 0 #e2674b; }
+.title-layout .controls-hint i { width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
+
+.title-sparkles { display: none; position: absolute; z-index: 2; inset: 0; overflow: hidden; pointer-events: none; }
+.title-sparkles i { position: absolute; width: 10px; height: 10px; opacity: 0; background: #fff6c9; clip-path: polygon(50% 0,61% 38%,100% 50%,61% 62%,50% 100%,39% 62%,0 50%,39% 38%); filter: drop-shadow(0 0 5px #ffd45a); animation: title-sparkle 3.2s ease-in-out infinite; }
+.title-sparkles i:nth-child(1){left:49%;top:17%;animation-delay:.4s}.title-sparkles i:nth-child(2){left:58%;top:69%;animation-delay:1.7s;transform:scale(.7)}.title-sparkles i:nth-child(3){left:78%;top:12%;animation-delay:2.4s;transform:scale(1.2)}.title-sparkles i:nth-child(4){left:87%;top:62%;animation-delay:.9s}.title-sparkles i:nth-child(5){left:44%;top:49%;animation-delay:2.8s;transform:scale(.55)}.title-sparkles i:nth-child(6){left:69%;top:32%;animation-delay:1.25s;transform:scale(.8)}
+
+@keyframes title-art-arrive { from { opacity: 0; transform: scale(1.08); } to { opacity: 1; } }
+@keyframes title-badge-arrive { from { opacity: 0; transform: translateY(-18px) rotate(-5deg); } }
+@keyframes title-copy-arrive { from { opacity: 0; transform: translateX(-24px); } }
+@keyframes title-actions-arrive { from { opacity: 0; transform: translateY(22px); } }
+@keyframes title-sparkle { 0%,100%{opacity:0;transform:scale(.35) rotate(0)} 45%,60%{opacity:.95;transform:scale(1) rotate(90deg)} }
+@keyframes title-button-ripple { 0%{opacity:.7;transform:translate(-50%,-50%) scale(0)} 100%{opacity:0;transform:translate(-50%,-50%) scale(22)} }
+
+@media (max-width: 850px) and (orientation: portrait) {
+  .title-screen { padding: 0; background: #75c2e9; }
+  .title-art {
+    inset: -10px;
+    background-image: url("assets/art/title-cover-mobile.png");
+    background-position: center;
+    transform: translate(calc(var(--cover-x) * -4px), calc(var(--cover-y) * -3px)) scale(1.025);
+  }
+  .title-light {
+    background:
+      linear-gradient(180deg, rgba(255,250,228,.82) 0%, rgba(255,249,225,.62) 23%, rgba(255,249,225,.1) 43%, rgba(20,23,47,.28) 66%, rgba(17,19,41,.95) 84%, #111329 100%),
+      linear-gradient(90deg, rgba(255,249,225,.36), transparent 78%);
+  }
+  .title-light::after { opacity: .1; mask-image: linear-gradient(#000, transparent 45%); }
+  .title-layout {
+    justify-content: flex-start;
+    width: 100%;
+    padding: max(18px, env(safe-area-inset-top)) 18px max(15px, env(safe-area-inset-bottom));
+    transform: none;
+  }
+  .title-badge { margin: 1px 0 14px; padding: 4px 8px 4px 5px; border-width: 2px; box-shadow: 3px 3px 0 #e46b4c; }
+  .title-badge strong { width: 29px; height: 29px; font-size: 16px; }
+  .title-badge span { font-size: 8px; }
+  .title-kicker { margin-bottom: 4px; font-size: 8px; color: #264865; }
+  .title-lockup h1 { font-size: clamp(38px, 11.4vw, 50px); line-height: .94; filter: drop-shadow(1px 2px 0 rgba(255,248,225,.95)); }
+  .title-lockup h1 small { margin-bottom: 7px; padding: 3px 8px 4px; font-size: .38em; box-shadow: 2px 2px 0 #201a36; }
+  .title-lockup .subtitle { margin-top: 10px; padding: 6px 8px; font-size: 10px; box-shadow: 2px 2px 0 #201a36; }
+  .title-actions { gap: 9px; max-width: none; margin: auto 0 13px; }
+  .title-button { min-height: 48px; padding: 7px 10px; border-radius: 7px; box-shadow: 0 3px 0 #201a36; }
+  .title-button-main { min-height: 59px; padding: 8px 14px; box-shadow: 0 4px 0 #c76548; }
+  .title-button-main .button-copy b { font-size: 18px; }
+  .button-copy b { font-size: 13px; }
+  .button-copy small { font-size: 8px; }
+  .button-icon { width: 25px; height: 25px; font-size: 14px; }
+  .button-arrow { font-size: 25px; }
+  .title-layout .controls-hint { align-self: center; color: rgba(255,249,229,.75); font-size: 8px; }
+  .title-sparkles i:nth-child(1){left:18%;top:36%}.title-sparkles i:nth-child(2){left:82%;top:31%}.title-sparkles i:nth-child(3){left:76%;top:60%}.title-sparkles i:nth-child(4){left:12%;top:57%}
+}
+
+@media (max-width: 380px) and (orientation: portrait) {
+  .title-layout { padding-left: 14px; padding-right: 14px; }
+  .title-badge { margin-bottom: 10px; }
+  .title-lockup h1 { font-size: clamp(36px, 10.8vw, 44px); }
+  .title-lockup .subtitle { font-size: 9px; }
+  .title-actions { margin-bottom: 10px; }
+  .title-button-main { min-height: 54px; }
+  .title-layout .controls-hint { display: none; }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .title-art { background-image: url("assets/art/title-cover-desktop.png"); }
+  .title-light { background: linear-gradient(90deg, rgba(255,248,218,.96), rgba(255,246,211,.75) 38%, transparent 65%); }
+  .title-layout { justify-content: center; width: 53%; padding: 14px 24px; }
+  .title-badge { margin-bottom: 9px; padding: 4px 8px 4px 5px; border-width: 2px; box-shadow: 3px 3px 0 #e46b4c; }
+  .title-badge strong { width: 29px; height: 29px; font-size: 16px; }
+  .title-badge span { font-size: 7px; }
+  .title-kicker { margin-bottom: 3px; font-size: 7px; }
+  .title-lockup h1 { font-size: clamp(32px, 7vh, 41px); line-height: .94; }
+  .title-lockup h1 small { margin-bottom: 3px; }
+  .title-lockup .subtitle { display: none; }
+  .title-actions { gap: 7px; margin: 13px 0 0; }
+  .title-button { min-height: 39px; padding: 5px 9px; border-width: 2px; box-shadow: 0 4px 0 #201a36; }
+  .title-button-main { min-height: 45px; box-shadow: 0 5px 0 #c76548; }
+  .title-button-main .button-copy b { font-size: 15px; }
+  .button-copy b { font-size: 11px; }.button-copy small { display: none; }
+  .button-icon { width: 23px; height: 23px; border-width: 1px; font-size: 12px; }
+  .button-arrow { font-size: 21px; }
+  .title-layout .controls-hint { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-art, .title-layout, .title-lockup, .title-actions, .title-badge, .title-sparkles i { animation: none !important; transition: none !important; transform: none !important; }
+}

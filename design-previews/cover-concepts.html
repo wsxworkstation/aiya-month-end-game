@@ -1,0 +1,221 @@
+<div id="month-end-cover-lab" class="cover-lab">
+  <div class="concept-tabs" role="tablist" aria-label="封面方向">
+    <button type="button" class="concept-tab is-active" data-concept="a" aria-selected="true">A · 小镇电影海报</button>
+    <button type="button" class="concept-tab" data-concept="b" aria-selected="false">B · 温暖小窝</button>
+    <button type="button" class="concept-tab" data-concept="c" aria-selected="false">C · 复古游戏盒</button>
+  </div>
+
+  <div class="mock-stage" aria-live="polite">
+    <section class="phone concept concept-a is-active" data-screen="a" aria-label="小镇电影海报封面方案">
+      <div class="a-sun"></div>
+      <div class="a-cloud cloud-one"></div><div class="a-cloud cloud-two"></div>
+      <div class="a-city"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="a-road"></div>
+      <div class="top-stamp"><span>12个月</span><b>月底生存记</b></div>
+      <div class="a-copy">
+        <span class="tiny-kicker">WALLET · WORK · LUCK</span>
+        <h1><small>哎呀，</small>又月底了呀</h1>
+        <p>跑过今天，付掉房租，明天继续。</p>
+      </div>
+      <div class="pixel-runner" aria-hidden="true">
+        <span class="hair"></span><span class="face"></span><span class="body"></span>
+        <span class="arm arm-l"></span><span class="arm arm-r"></span>
+        <span class="leg leg-l"></span><span class="leg leg-r"></span><span class="bag"></span>
+      </div>
+      <div class="coin coin-one">$</div><div class="coin coin-two">$</div>
+      <div class="a-menu">
+        <button type="button" class="main-action"><span>开始新生活</span><small>从第 1 月出发 →</small></button>
+        <div class="minor-actions">
+          <button type="button"><span>继续</span><small>第 4 月</small></button>
+          <button type="button"><span>卡片</span><small>图鉴 42/96</small></button>
+        </div>
+      </div>
+      <div class="control-note">WASD 移动 · E 互动</div>
+    </section>
+
+    <section class="phone concept concept-b" data-screen="b" aria-label="温暖小窝封面方案" hidden>
+      <div class="b-wall"></div>
+      <div class="b-window"><div class="window-sky"></div><div class="window-city"></div></div>
+      <div class="b-lamp"><i></i></div>
+      <div class="b-shelf"><span></span><span></span><span></span><span></span></div>
+      <div class="calendar-sheet">
+        <div class="binder"><i></i><i></i></div>
+        <span class="month-label">月底 · 第 1 月</span>
+        <h1>哎呀，<br><em>又月底了呀</em></h1>
+        <p>今天的目标：有饭吃、有钱交租，记得回家睡觉。</p>
+        <div class="scribble"><span>房租</span><b>$300</b><i></i><span>钱包</span><b>$500</b></div>
+      </div>
+      <div class="desk"><div class="mug">☕</div><div class="wallet-prop"></div></div>
+      <div class="b-menu">
+        <button type="button" class="door-action">推门出发 <span>→</span></button>
+        <button type="button" class="text-action">继续第 4 月</button>
+        <button type="button" class="book-action">▦ 卡片图鉴</button>
+      </div>
+      <div class="control-note">方向键 / WASD · E 互动</div>
+    </section>
+
+    <section class="phone concept concept-c" data-screen="c" aria-label="复古游戏盒封面方案" hidden>
+      <div class="c-grid"></div><div class="c-burst"></div>
+      <div class="c-label">12 MONTH SURVIVAL</div>
+      <div class="c-title"><span>哎呀！</span><strong>又月底了呀</strong></div>
+      <div class="c-sub">打工 · 吃饭 · 抽卡 · 投资 · 赶回家</div>
+      <div class="c-portrait" aria-hidden="true">
+        <span class="c-hair"></span><span class="c-face"></span><span class="c-shirt"></span><span class="c-wallet">$</span>
+      </div>
+      <div class="stat-stickers"><span>12个月</span><span>别破产</span><span>看运气</span></div>
+      <div class="c-menu">
+        <button type="button" class="start-bar"><i>▶</i> 开始新生活</button>
+        <button type="button">继续第 4 月</button>
+        <button type="button">卡片图鉴</button>
+      </div>
+      <div class="c-edition">MONTH-END EDITION · 8-BIT LIFE GAME</div>
+    </section>
+  </div>
+</div>
+
+<style>
+#month-end-cover-lab { --lab-accent:#f5c84c; --title-scale:1; font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; width:100%; color:#1a1731; }
+#month-end-cover-lab * { box-sizing:border-box; }
+#month-end-cover-lab button { font:inherit; }
+.concept-tabs { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:0 0 16px; }
+.concept-tab { border:1px solid light-dark(#d5d1c5,#4d4a62); color:light-dark(#39354b,#eceaf5); background:light-dark(#f6f3ea,#2c2a3b); border-radius:999px; padding:9px 14px; min-height:42px; font-weight:700; }
+.concept-tab.is-active { background:light-dark(#201c38,#f4ca56); color:light-dark(#fff,#201c38); border-color:transparent; }
+.mock-stage { display:grid; place-items:center; width:100%; }
+.phone { position:relative; width:min(100%,430px); aspect-ratio:430/650; overflow:hidden; border-radius:28px; box-shadow:0 18px 50px rgba(15,12,36,.24); isolation:isolate; }
+.concept[hidden] { display:none; }
+.concept button { border:0; }
+.control-note { position:absolute; left:0; right:0; bottom:14px; text-align:center; font-size:11px; letter-spacing:.08em; font-weight:700; }
+
+/* A — cinematic town poster */
+.concept-a { background:linear-gradient(#82c9dc 0 47%,#f8d780 47% 62%,#55915f 62%); color:#1c1833; }
+.a-sun { position:absolute; width:230px; height:230px; border-radius:50%; background:#ffd55a; left:-58px; top:105px; box-shadow:0 0 0 18px rgba(255,224,125,.35); }
+.a-cloud { position:absolute; height:20px; border-radius:4px; background:#f8f1da; box-shadow:22px -12px 0 #f8f1da,44px 0 0 #f8f1da; opacity:.9; }
+.cloud-one { top:85px; right:54px; width:48px; }.cloud-two { top:175px; right:-15px; width:38px; transform:scale(.7); }
+.a-city { position:absolute; left:0; right:0; top:255px; height:150px; display:flex; align-items:flex-end; gap:6px; padding:0 10px; opacity:.84; }
+.a-city i { flex:1; min-width:34px; background:#314b66; box-shadow:inset 8px 0 rgba(255,255,255,.08); border-top:5px solid #22364c; }
+.a-city i:nth-child(1){height:62px}.a-city i:nth-child(2){height:118px}.a-city i:nth-child(3){height:86px}.a-city i:nth-child(4){height:142px}.a-city i:nth-child(5){height:105px}.a-city i:nth-child(6){height:74px}
+.a-road { position:absolute; left:-45px; right:-45px; bottom:160px; height:105px; background:#34344e; transform:rotate(-5deg); border-top:9px solid #ece1bd; border-bottom:9px solid #ece1bd; }
+.a-road::after { content:""; position:absolute; left:0; right:0; top:45px; height:5px; background:repeating-linear-gradient(90deg,#f7d85a 0 34px,transparent 34px 58px); }
+.top-stamp { position:absolute; top:22px; left:22px; display:flex; align-items:center; gap:8px; background:#1d1b38; color:#fff4cf; padding:8px 12px; border-radius:6px; box-shadow:4px 4px 0 #e66f51; transform:rotate(-2deg); font-size:11px; }
+.top-stamp b { color:#ffd55a; }
+.a-copy { position:absolute; z-index:4; top:64px; left:24px; right:20px; }
+.tiny-kicker { font-size:9px; font-weight:900; letter-spacing:.18em; color:#243550; }
+.a-copy h1 { margin:6px 0 0; font-size:calc(43px * var(--title-scale)); line-height:.92; letter-spacing:-.08em; color:#18152e; text-shadow:3px 3px 0 #f6e6ad; }
+.a-copy h1 small { display:block; font-size:.55em; letter-spacing:-.04em; color:#e7553e; }
+.a-copy p { margin:12px 0 0; font-size:12px; font-weight:800; background:#fff7df; display:inline-block; padding:6px 9px; transform:rotate(-1deg); box-shadow:3px 3px 0 #1c1833; }
+.pixel-runner { position:absolute; z-index:5; width:135px; height:185px; right:32px; top:245px; filter:drop-shadow(8px 10px 0 rgba(31,28,54,.25)); transform:rotate(5deg); }
+.pixel-runner span { position:absolute; display:block; }
+.pixel-runner .face { width:62px; height:58px; border-radius:24px 25px 20px 22px; background:#f0aa6b; left:34px; top:26px; border:5px solid #17162b; }
+.pixel-runner .hair { width:76px; height:42px; background:#17162b; left:27px; top:15px; clip-path:polygon(0 74%,9% 30%,22% 48%,31% 0,46% 30%,59% 3%,68% 35%,89% 16%,100% 76%,77% 100%,23% 98%); }
+.pixel-runner .body { width:72px; height:76px; background:#eef3e8; border:6px solid #17162b; left:32px; top:76px; transform:skew(-5deg); }
+.pixel-runner .body::after { content:""; position:absolute; width:30px; height:70px; right:-20px; top:0; background:#3d73b6; border:5px solid #17162b; }
+.pixel-runner .arm { width:24px; height:70px; background:#efaa69; border:5px solid #17162b; top:82px; border-radius:16px; }
+.pixel-runner .arm-l { left:12px; transform:rotate(38deg); }.pixel-runner .arm-r { right:9px; transform:rotate(-50deg); }
+.pixel-runner .leg { width:28px; height:66px; background:#1f365d; border:5px solid #17162b; top:142px; }
+.pixel-runner .leg-l { left:34px; transform:rotate(18deg); }.pixel-runner .leg-r { right:28px; transform:rotate(-25deg); }
+.pixel-runner .bag { width:52px; height:54px; border-radius:5px; background:#e86b4d; border:6px solid #17162b; right:-15px; top:88px; transform:rotate(-10deg); }
+.coin { position:absolute; z-index:6; width:31px; height:31px; display:grid; place-items:center; border-radius:50%; background:#ffd44f; border:4px solid #1b1931; font-size:13px; font-weight:900; color:#945429; }
+.coin-one{top:320px;left:58px;transform:rotate(-10deg)}.coin-two{top:385px;left:105px;transform:scale(.76) rotate(12deg)}
+.a-menu { position:absolute; z-index:8; left:20px; right:20px; bottom:44px; }
+.main-action { width:100%; min-height:62px; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; color:#1b1831; background:#ffd45b; box-shadow:0 7px 0 #c96a46; border-radius:8px; font-weight:900; }
+.main-action span { font-size:19px; }.main-action small { font-size:10px; }
+.minor-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+.minor-actions button { min-height:48px; border-radius:8px; background:#fff8df; color:#1b1831; box-shadow:0 4px 0 #25233e; display:flex; justify-content:space-between; align-items:center; padding:8px 12px; font-weight:900; }
+.minor-actions small { font-size:9px; color:#736d7b; }.concept-a .control-note { color:#f9efcf; text-shadow:1px 1px #25233e; }
+
+/* B — warm home */
+.concept-b { background:#dcae7d; color:#3a2a2a; }
+.b-wall { position:absolute; inset:0 0 155px; background:repeating-linear-gradient(90deg,#e9c99c 0 38px,#e5c192 38px 41px); }
+.b-window { position:absolute; top:28px; right:24px; width:135px; height:152px; border:12px solid #f4e4c6; box-shadow:5px 5px 0 #8d5d4b; overflow:hidden; }
+.window-sky { position:absolute; inset:0; background:linear-gradient(#769bc9,#f5ba78); }
+.window-city { position:absolute; left:0; right:0; bottom:0; height:72px; background:repeating-linear-gradient(90deg,#39415f 0 16px,#59627d 16px 24px,#2e3854 24px 39px); clip-path:polygon(0 35%,9% 35%,9% 0,17% 0,17% 48%,28% 48%,28% 20%,37% 20%,37% 55%,48% 55%,48% 8%,59% 8%,59% 44%,70% 44%,70% 16%,79% 16%,79% 53%,91% 53%,91% 29%,100% 29%,100% 100%,0 100%); }
+.b-lamp { position:absolute; top:0; left:34px; width:7px; height:78px; background:#573f3d; }.b-lamp i { position:absolute; width:92px; height:44px; left:-42px; bottom:-28px; background:#ef6c51; clip-path:polygon(20% 0,80% 0,100% 100%,0 100%); box-shadow:0 20px 30px rgba(255,218,121,.6); }
+.b-shelf { position:absolute; top:208px; right:18px; width:120px; height:10px; background:#7f5342; box-shadow:0 8px 0 rgba(65,37,34,.2); display:flex; gap:5px; align-items:flex-end; padding:0 10px; }
+.b-shelf span { display:block; width:16px; height:42px; background:#6b88a7; border:3px solid #4d3b3b; }.b-shelf span:nth-child(2){height:34px;background:#e8b548}.b-shelf span:nth-child(3){height:48px;background:#c45d52}.b-shelf span:nth-child(4){height:38px;background:#7d9d6e}
+.calendar-sheet { position:absolute; z-index:4; left:24px; top:72px; width:300px; min-height:336px; padding:38px 24px 20px; background:#fff8e8; transform:rotate(-2deg); box-shadow:8px 10px 0 rgba(83,50,44,.28); border:3px solid #5b4040; }
+.binder { position:absolute; left:34px; right:34px; top:-11px; display:flex; justify-content:space-between; }.binder i { width:20px; height:28px; border:5px solid #494057; border-radius:10px; background:#d9b177; }
+.month-label { color:#b34e46; font-size:11px; letter-spacing:.12em; font-weight:900; }
+.calendar-sheet h1 { font-size:calc(40px * var(--title-scale)); line-height:1.02; margin:10px 0 12px; letter-spacing:-.08em; color:#362d46; }
+.calendar-sheet h1 em { color:#e46546; font-style:normal; background:linear-gradient(transparent 68%,#f7d765 68%); }
+.calendar-sheet p { margin:0; font-size:12px; line-height:1.7; font-weight:700; color:#6f5e5b; }
+.scribble { display:grid; grid-template-columns:1fr auto; gap:6px; margin-top:16px; padding-top:12px; border-top:2px dashed #c7b49a; font-size:12px; }.scribble i { grid-column:1/3; height:1px; background:#e6d7c3; }
+.desk { position:absolute; left:0; right:0; bottom:0; height:185px; background:#89583e; border-top:12px solid #5e3b34; }
+.mug { position:absolute; left:26px; top:20px; width:58px; height:54px; display:grid; place-items:center; background:#f5eee0; border:4px solid #49383b; border-radius:5px 5px 16px 16px; font-size:22px; }.wallet-prop { position:absolute; right:28px; top:30px; width:72px; height:45px; border-radius:5px; background:#334b6e; border:4px solid #332d3a; transform:rotate(7deg); }
+.b-menu { position:absolute; z-index:6; left:38px; right:38px; bottom:42px; display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.door-action { grid-column:1/3; min-height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 18px; font-size:19px; font-weight:900; color:#fff7df; background:#c85d43; border-radius:5px; box-shadow:0 6px 0 #49313a; }.door-action span { font-size:26px; }
+.text-action,.book-action { min-height:42px; border-radius:5px; font-size:11px; font-weight:900; color:#3c3040; background:#f4d36e; box-shadow:0 4px 0 #4b3438; }
+.concept-b .control-note { color:#ead8bb; }
+
+/* C — retro game box */
+.concept-c { background:#251c48; color:#fff6da; border:8px solid #17132c; }
+.c-grid { position:absolute; inset:0; background:linear-gradient(rgba(78,223,196,.09) 2px,transparent 2px),linear-gradient(90deg,rgba(78,223,196,.09) 2px,transparent 2px); background-size:30px 30px; transform:perspective(300px) rotateX(45deg) scale(1.4); transform-origin:bottom; }
+.c-burst { position:absolute; width:430px; height:430px; right:-165px; top:70px; border-radius:50%; background:repeating-conic-gradient(#f5c94f 0 8deg,#ef6c57 8deg 16deg); box-shadow:0 0 0 18px #56c5ad,0 0 0 24px #17132c; }
+.c-label { position:absolute; top:22px; left:20px; padding:7px 10px; background:#57c8b0; color:#1d1937; font-size:9px; font-weight:900; letter-spacing:.13em; transform:rotate(-2deg); }
+.c-title { position:absolute; z-index:3; top:65px; left:20px; right:18px; text-transform:none; filter:drop-shadow(6px 6px 0 #17132c); }
+.c-title span { display:block; color:#fff7da; font-size:calc(42px * var(--title-scale)); line-height:.9; font-weight:900; transform:rotate(-4deg); }
+.c-title strong { display:inline-block; margin-top:8px; padding:5px 9px 7px; color:#211b3c; background:#f5c94f; font-size:calc(38px * var(--title-scale)); line-height:1; letter-spacing:-.08em; transform:rotate(-1deg); box-shadow:7px 7px 0 #e26350; }
+.c-sub { position:absolute; z-index:4; top:188px; left:22px; background:#17132c; color:#fff; padding:7px 9px; font-size:10px; font-weight:900; transform:rotate(1deg); }
+.c-portrait { position:absolute; z-index:3; width:232px; height:255px; right:-10px; top:205px; transform:rotate(4deg); filter:drop-shadow(-8px 10px 0 rgba(20,15,44,.35)); }
+.c-portrait span { position:absolute; display:block; }
+.c-face { width:116px; height:108px; border-radius:46% 46% 42% 42%; background:#f1aa67; border:8px solid #17132c; left:55px; top:46px; }
+.c-hair { z-index:2; width:148px; height:86px; background:#161329; left:38px; top:24px; clip-path:polygon(0 80%,8% 32%,22% 48%,29% 2%,42% 34%,56% 0,66% 35%,85% 11%,100% 70%,88% 100%,10% 100%); }
+.c-shirt { width:170px; height:140px; background:#f4f0df; border:9px solid #17132c; left:27px; top:143px; border-radius:35px 35px 8px 8px; }.c-shirt::after { content:""; position:absolute; inset:0 47%; background:#ef6c55; }
+.c-wallet { z-index:4; right:0; bottom:10px; width:78px; height:58px; border:7px solid #17132c; background:#57c8b0; display:grid!important; place-items:center; color:#17132c; font-size:28px; font-weight:900; transform:rotate(-8deg); }
+.stat-stickers { position:absolute; z-index:5; left:24px; top:250px; display:flex; flex-direction:column; gap:10px; align-items:flex-start; }.stat-stickers span { padding:6px 9px; color:#17132c; background:#fff5d9; border:4px solid #17132c; box-shadow:4px 4px 0 #57c8b0; font-size:10px; font-weight:900; transform:rotate(-3deg); }.stat-stickers span:nth-child(2){transform:rotate(3deg);background:#ef6c55;color:#fff}.stat-stickers span:nth-child(3){transform:rotate(-1deg);background:#f5c94f}
+.c-menu { position:absolute; z-index:8; left:20px; right:20px; bottom:45px; display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.c-menu button { min-height:43px; border:4px solid #17132c; background:#fff4d8; color:#201a3b; font-size:11px; font-weight:900; box-shadow:5px 5px 0 #56c7b0; }.c-menu .start-bar { grid-column:1/3; min-height:60px; background:#f4c84e; font-size:18px; box-shadow:6px 6px 0 #ef6a56; }.start-bar i { font-style:normal; color:#e64f45; margin-right:6px; }
+.c-edition { position:absolute; bottom:12px; left:0; right:0; text-align:center; font-size:8px; letter-spacing:.13em; color:#8fe3d0; font-weight:800; }
+
+@media (max-width:380px){ .phone{border-radius:20px}.concept-tabs{justify-content:flex-start}.concept-tab{flex:1 1 100%;}.a-copy h1{font-size:calc(37px * var(--title-scale))}.calendar-sheet{width:270px}.c-title strong{font-size:calc(33px * var(--title-scale))} }
+</style>
+
+<script>
+(() => {
+  const root = document.getElementById("month-end-cover-lab");
+  const state = { concept: "a", titleScale: 1, accent: "#f5c84c" };
+  const tabs = [...root.querySelectorAll(".concept-tab")];
+  const screens = [...root.querySelectorAll(".concept")];
+
+  function render() {
+    root.style.setProperty("--title-scale", String(state.titleScale));
+    root.style.setProperty("--lab-accent", state.accent);
+    tabs.forEach(tab => {
+      const active = tab.dataset.concept === state.concept;
+      tab.classList.toggle("is-active", active);
+      tab.setAttribute("aria-selected", String(active));
+    });
+    screens.forEach(screen => {
+      const active = screen.dataset.screen === state.concept;
+      screen.hidden = !active;
+      screen.classList.toggle("is-active", active);
+    });
+  }
+
+  tabs.forEach(tab => tab.addEventListener("click", () => {
+    state.concept = tab.dataset.concept;
+    render();
+    if (window.openai?.setWidgetState) {
+      window.openai.setWidgetState({ modelContent: { selectedCover: state.concept }, privateContent: state }).catch(() => {});
+    }
+  }));
+
+  const saved = window.openai?.widgetState?.privateContent;
+  if (saved && ["a","b","c"].includes(saved.concept)) Object.assign(state, saved);
+  window.addEventListener("openai:set_globals", event => {
+    const next = event.detail?.globals?.widgetState?.privateContent;
+    if (next && ["a","b","c"].includes(next.concept)) { Object.assign(state, next); render(); }
+  });
+  render();
+
+  if (globalThis.Tweak) {
+    const tweak = new Tweak({ container: root, onChange: render });
+    tweak.addSelect(state, "concept", { label: "封面方向", options: [
+      { label: "小镇电影海报", value: "a" },
+      { label: "温暖小窝", value: "b" },
+      { label: "复古游戏盒", value: "c" }
+    ]});
+    tweak.addSlider(state, "titleScale", { label: "标题比例", min: .85, max: 1.12, step: .01 });
+    tweak.addColorPicker(state, "accent", { label: "强调色", reference: "--lab-accent" });
+  }
+})();
+</script>

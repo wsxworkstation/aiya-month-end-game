@@ -297,9 +297,9 @@ const ROAD_CELL = 6;
   };
 
   const WORK_TIERS = [
-    { id: "easy", name: "简单的活", icon: "🧹", energy: 15, pay: 320, span: 12, copy: "动力-15，工资$320。题目很简单" },
-    { id: "normal", name: "普通的活", icon: "💼", energy: 30, pay: 560, span: 25, copy: "动力-30，工资$560。题目普通" },
-    { id: "hard", name: "困难的活", icon: "🧠", energy: 50, pay: 880, span: 40, copy: "动力-50，工资$880。题目会让你想一下" }
+    { id: "easy", name: "简单的活", icon: "🧹", energy: 15, pay: 320, span: 12, copy: "题目很简单" },
+    { id: "normal", name: "普通的活", icon: "💼", energy: 30, pay: 560, span: 25, copy: "题目普通" },
+    { id: "hard", name: "困难的活", icon: "🧠", energy: 50, pay: 880, span: 40, copy: "题目会让你想一下" }
   ];
 
   const STOCKS = [
@@ -672,9 +672,9 @@ const PERMANENT_ITEMS = [
     const artStyle = art ? `style="--card-image:url('${sheet}');--card-size:${cols * 100}% ${rows * 100}%;--card-x:${x}%;--card-y:${y}%"` : "";
     const effect = item.copy || item.effect || (item.pay != null ? `工资 ${money(item.pay)}` : "");
     const footer = meta && meta.trim() && meta.trim() !== effect.trim() ? meta : "";
-    const rarity = extraClass.includes("bad") ? "风险" : extraClass.includes("good") ? "好运" : extraClass.includes("stock") ? "市场" : "生活";
+    // No rarity strip and no gem: they said nothing the picture and the title do not,
+    // and the 23px they took was coming out of the text, which then ran into the price.
     return `<button class="game-card ${extraClass}" data-card-id="${item.id}">
-      <span class="card-head"><span>${rarity}</span><span class="card-gem">◆</span></span>
       <span class="card-art" ${artStyle}>${art ? "" : `<span class="card-icon">${item.icon || "🃏"}</span>`}</span>
       <span class="card-body"><strong class="card-title">${item.name}</strong>
       <span class="card-copy"><b>效果</b>${effect}</span>

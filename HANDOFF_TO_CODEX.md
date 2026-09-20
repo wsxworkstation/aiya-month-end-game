@@ -449,3 +449,34 @@ see sunset/night you have to let it run in real time (sunset at
   wasn't necessary, but if you look closely some door/label positions
   sit a little off-center from the painted building. Minor polish, not
   a bug.
+
+## 2026-09-20 — 杂货铺改成「永久 / 一次性」两个货架
+
+游戏这边改好了，art 只有一处要你帮忙（见最后）。
+
+**永久物品**（背包 3 格，可半价卖回）：转运项链 $280 幸运+10 · 飞毛腿跑鞋 $300 走路快18% ·
+软底舒服袜 $240 走路省30%动力 · 保温饭盒 $260 每餐多回35% · 阿嬷的药油 $220 睡觉多回10 ·
+铜钱串 $320 银行利息+3% · 招财猫 $460 每月自动进账$90。
+
+**一次性物品**（买了留到用，不再月底清空）：防身喷雾 $150 · 提神饮料 $90 · 三合一咖啡 $60 ·
+巴士票 $70 · 转运手绳 $80 · 幸运硬币 $140 · 计算器 $120 · 免费餐券 $130 ·
+市场小道消息 $180 · 超级闹钟 $90 · 抄近路地图 $110。
+
+图鉴分类跟着改名：`工具卡` → `一次性物品`，`幸运物品` → `永久物品`。
+
+**兼职**不再送工具了，改成「钱 + 一只股票的内幕」。内幕是真的：每个月月初先把 5 只股票
+这个月的涨跌 roll 出来存进 `state.pendingStock`，月底原样套用，所以工友说「会大涨」它就真的会涨。
+`scripts/check-stock-tips.js`（纯逻辑，跑 10000 个 stock-month）和
+`scripts/check-shop-flow.js`（真的开浏览器玩一个月）在看着这件事，别绕过它们。
+
+**房租**先扣银行，不够再扣钱包，还不够才变债务。房租每月涨 $35（第12月 $605），
+工资砍了约 20%，股票涨跌改成对称的。
+
+**要画的图**（目前借用别人的图凑合）：
+- `luck:shoes` — 飞毛腿跑鞋（永久版），现在借 `tool:shoes` 的图
+- `luck:lunchbox` — 保温饭盒，现在借 `tool:meal`（免费餐券）的图
+- `luck:necklace / socks / potion / coincharm / cat` 已经有图，但名字换了：
+  socks 现在叫「软底舒服袜」、potion 叫「阿嬷的药油」、coincharm 叫「铜钱串」、cat 叫「招财猫」，
+  如果现有图对不上意思，可以重画。
+
+规矩不变：图上不要写字，不要国旗，沿用原来的色盘。

@@ -302,8 +302,8 @@ const ROAD_CELL = 6;
     pixelsPerPoint: 80,       // walking the full 960px map costs about 12
     partTime: 20,
     bank: 0,              // paperwork, not effort
-    stock: 5,
-    roi: 5,
+    stock: 0,             // so is buying and selling
+    roi: 0,               // and so is handing money to a project
     shop: 3,
     // Eating and working stay repeatable, so both need diminishing returns or the
     // pair becomes an infinite money loop (buy energy cheap, sell it dear).
@@ -568,7 +568,6 @@ const PERMANENT_ITEMS = [
       tempTools: [],
       stockPrices: Object.fromEntries(STOCKS.map(item => [item.id, { price: item.price, change: 0 }])),
       holdings: {},
-      stockOffers: [],
       pendingStock: {},
       nextStock: {},
       stockTips: {},
@@ -766,7 +765,6 @@ const PERMANENT_ITEMS = [
     state.rentPaid = false;
     state.boughtItems = {};
     state.flags = { work: false, food: false, fun: false, roi: false, partTimeDrawn: false, stockBought: false };
-    state.stockOffers = [];
     if (!state.pendingStock || !Object.keys(state.pendingStock).length) state.pendingStock = rollStockChanges();
     if (!state.nextStock || !Object.keys(state.nextStock).length) state.nextStock = rollStockChanges();
     state.stockTips = {};
@@ -1433,17 +1431,12 @@ const PERMANENT_ITEMS = [
     showBank();
   }
 
-  function ensureStockOffers() {
-    if (!state.stockOffers.length) state.stockOffers = shuffle(STOCKS).slice(0, 3).map(item => item.id);
-  }
-
   function showStock() {
-    ensureStockOffers();
-    state.stockOffers.forEach(id => collect("股票卡", id));
-    const offers = state.stockOffers.map(id => STOCKS.find(item => item.id === id));
+    STOCKS.forEach(item => collect("股票卡", item.id));
+    const offers = STOCKS;
     const holdings = Object.entries(state.holdings).filter(([, holding]) => holding.qty > 0);
-    openModal(`<p class="eyebrow">涨跌交易所</p><h2>本月发现的三只股票</h2><div class="status-strip"><span class="status-chip">买卖一次 动力-${ENERGY.stock}</span><span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
-      <p class="modal-intro">本月只能买一种，最多10股。持有的随时可卖。</p>
+    openModal(`<p class="eyebrow">涨跌交易所</p><h2>今天的行情</h2><div class="status-strip">${ENERGY.stock ? `<span class="status-chip">买卖一次 动力-${ENERGY.stock}</span>` : ""}<span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
+      <p class="modal-intro">五只全在这里。本月只能买一种，最多10股，持有的随时可卖。</p>
       <div class="card-grid">${offers.map(item => {
         const price = state.stockPrices[item.id];
         const known = state.stockTips[item.id] || state.marketHint;
@@ -1501,7 +1494,7 @@ const PERMANENT_ITEMS = [
     if (state.flags.roi) { simpleMessage("本月已经投过了", "投资需要一点耐心。下个月钱会自动进入银行。", "🎯"); return; }
     const lastMonth = state.month >= TOTAL_MONTHS;
     const tooTired = !hasEnergyFor(ENERGY.roi);
-    openModal(`<p class="eyebrow">ROI研究所</p><h2>选择风险，再抽回报</h2><div class="status-strip"><span class="status-chip">投资一次 动力-${ENERGY.roi}</span><span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
+    openModal(`<p class="eyebrow">ROI研究所</p><h2>选择风险，再抽回报</h2><div class="status-strip">${ENERGY.roi ? `<span class="status-chip">投资一次 动力-${ENERGY.roi}</span>` : ""}<span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
       <p class="modal-intro">${lastMonth ? "最后一个月，这笔钱会在月底结算时直接进银行。" : "钱锁一个月，下月自动进银行。"}</p>
       ${tooTired ? `<div class="result-box negative">动力只剩 ${Math.round(state.motivation)}，投一次要 ${ENERGY.roi}。先去食堂吃点东西再回来。</div>` : ""}
       <div class="card-grid">${ROI_TYPES.map(type => cardMarkup(type, tooTired ? "unaffordable" : type.color,
@@ -1514,7 +1507,7 @@ const PERMANENT_ITEMS = [
     const type = ROI_TYPES.find(item => item.id === typeId);
     const ceiling = Math.min(ROI_MAX, Math.floor(combinedFunds()));
     openModal(`<p class="eyebrow">${type.name}</p><h2>投入多少？</h2>
-      <p>可能回报：${type.min}%至+${type.max}%。每次最多投 ${money(ROI_MAX)}，不管哪一种项目。动力-${ENERGY.roi}。</p>
+      <p>可能回报：${type.min}%至+${type.max}%。每次最多投 ${money(ROI_MAX)}，不管哪一种项目。${ENERGY.roi ? `动力-${ENERGY.roi}。` : ""}</p>
       <div class="status-strip">
         <span class="status-chip">钱包 ${money(state.wallet)}</span>
         <span class="status-chip">银行 ${money(state.bank)}</span>
@@ -1593,7 +1586,7 @@ const PERMANENT_ITEMS = [
         <span class="status-chip">钱包 ${money(state.wallet)}</span>
         <span class="status-chip">永久 ${state.permanentItems.length}/3</span>
         <span class="status-chip">一次性 ${state.tempTools.length}/3</span>
-        <span class="status-chip${hasEnergyFor(ENERGY.shop) ? "" : " warn"}">买一件 动力-${ENERGY.shop}</span>
+        ${ENERGY.shop ? `<span class="status-chip${hasEnergyFor(ENERGY.shop) ? "" : " warn"}">买一件 动力-${ENERGY.shop}</span>` : ""}
       </div>
       ${hasEnergyFor(ENERGY.shop) ? "" : `<div class="result-box negative">动力只剩 ${Math.round(state.motivation)}，买一件要 ${ENERGY.shop}。</div>`}
       <h3 class="shelf-title">永久物品 · 买了一直有效</h3>

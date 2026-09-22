@@ -1,5 +1,6 @@
-// Drain the player down to a few points of energy, then check that a counter which
-// charges energy refuses the action instead of taking it and collapsing you mid-way.
+// Drain the player down to a couple of points, then check that a counter which charges
+// energy refuses the action instead of taking it and collapsing you mid-way. The shop is
+// the one that still costs anything; the exchange and the lab are free.
 //
 // Needs playwright and a local server on 8934.
 let chromium;
@@ -22,7 +23,7 @@ async function goTo(p, place) {
   }
   return (await prompt(p)).includes(place);
 }
-const ENERGY_FLOOR = 4;   // below the ROI cost of 5
+const ENERGY_FLOOR = 2;   // below the shop cost of 3
 let fails = 0;
 const check = (ok, label, extra = "") => { if (!ok) fails++; console.log((ok ? "OK   " : "FAIL ") + label + (extra ? " :: " + extra : "")); };
 (async () => {
@@ -37,7 +38,7 @@ const check = (ok, label, extra = "") => { if (!ok) fails++; console.log((ok ? "
 
   // Stand at the door FIRST, then drain: walking is the one drain that cannot refuse,
   // so a player on fumes across the map simply collapses before arriving.
-  check(await goTo(p, "ROI研究所"), "walked to ROI研究所 while still fresh");
+  check(await goTo(p, "包好运杂货铺"), "walked to 包好运杂货铺 while still fresh");
   for (let i = 0; i < 420; i++) {
     const g = await p.evaluate(() => window.__peek());
     if (!g || !g.playing) break;
@@ -48,23 +49,23 @@ const check = (ok, label, extra = "") => { if (!ok) fails++; console.log((ok ? "
   check(g && g.playing && g.energy <= ENERGY_FLOOR, "drained to the last few points at the door",
         "energy " + (g && g.energy));
 
-  // ROI: the shelf should refuse rather than invest and collapse.
-  if (await goTo(p, "ROI研究所")) {
+  // The shelf should refuse rather than sell and collapse you at the counter.
+  if (await goTo(p, "包好运杂货铺")) {
     await p.keyboard.press("KeyE"); await p.waitForTimeout(650);
     await click(p, "#counter-act", 800);
     const text = await body(p);
-    check(text.includes("动力不够") || text.includes("动力只剩"), "ROI says the energy is short", flat(text).slice(0, 160));
+    check(text.includes("动力不够") || text.includes("动力只剩"), "the shop says the energy is short", flat(text).slice(0, 160));
     const cards = await p.$$eval("#modal-content .game-card", els => els.map(e => e.className));
-    check(cards.length > 0 && cards.every(c => c.includes("unaffordable")), "every ROI card is greyed out", JSON.stringify(cards));
+    check(cards.length > 0 && cards.every(c => /unaffordable|owned/.test(c)), "every card on the shelf is greyed out", JSON.stringify(cards));
     const before = await p.evaluate(() => window.__peek());
     await click(p, "#modal-content .game-card", 600);
     const after = await p.evaluate(() => window.__peek());
     check(after.playing && after.energy === before.energy && after.wallet === before.wallet,
           "clicking one does nothing at all",
           "energy " + before.energy + "->" + after.energy + ", wallet " + before.wallet + "->" + after.wallet);
-    check(!after.roi, "and the month's ROI is still not done");
+    check(after.tools.length + after.spray === before.tools.length + before.spray, "and nothing landed in the bag");
   } else {
-    check(false, "still at ROI研究所 after draining");
+    check(false, "still at 包好运杂货铺 after draining");
   }
   console.log("");
   console.log("page errors: " + (errors.length ? errors.join(" | ") : "none"));

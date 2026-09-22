@@ -122,30 +122,41 @@ async function enter(p, place, peek) {
   await dismiss(p, 3);
   await safeClick(p, "#counter-leave", 600);
 
-  // --- one one-shot a month ----------------------------------------------------
+  // --- one of each kind a month, but different kinds are fine -----------------
   check(await enter(p, "包好运杂货铺", peek), "walked to the shop");
-  const buy = async () => {
-    const handle = await p.evaluateHandle(() => {
+  // Click a specific card by id, so "buy the same one twice" really is the same one.
+  const clickCard = async (id) => {
+    const handle = await p.evaluateHandle(cardId => {
       const grid = document.querySelectorAll("#modal-content .card-grid")[1];
-      const card = [...grid.querySelectorAll(".game-card")].find(c => !/unaffordable|owned/.test(c.className));
-      return card || null;
-    });
+      return [...grid.querySelectorAll(".game-card")].find(c => c.dataset.cardId === cardId) || null;
+    }, id);
     const el = handle.asElement();
     if (!el) return false;
     await el.click();
     await p.waitForTimeout(550);
     return true;
   };
-  const first = await buy();
+  const offered = await p.$$eval("#modal-content .card-grid", grids =>
+    [...grids[1].querySelectorAll(".game-card")]
+      .filter(c => !/unaffordable|owned/.test(c.className))
+      .map(c => c.dataset.cardId));
+  check(offered.length >= 2, "at least two one-shots are affordable to test with", JSON.stringify(offered));
+  const held = g => g.tools.length + g.spray;
+  const start = await peek();
+  await clickCard(offered[0]);
   const afterFirst = await peek();
-  await buy();
-  const afterSecond = await peek();
-  check(first && afterFirst.tools.length + afterFirst.spray === 1, "bought one one-shot",
+  check(held(afterFirst) === held(start) + 1, "bought the first one-shot",
         "tools " + JSON.stringify(afterFirst.tools) + " spray " + afterFirst.spray);
-  check(afterSecond.tools.length + afterSecond.spray === afterFirst.tools.length + afterFirst.spray,
-        "a second one-shot is refused the same month",
+  await clickCard(offered[0]);
+  const afterRepeat = await peek();
+  check(held(afterRepeat) === held(afterFirst), "buying the SAME kind again is refused",
+        "tools " + JSON.stringify(afterRepeat.tools) + " spray " + afterRepeat.spray);
+  check((await body(p)).includes("这个月买过了"), "that card says why");
+  await clickCard(offered[1]);
+  const afterSecond = await peek();
+  check(held(afterSecond) === held(afterFirst) + 1, "a DIFFERENT kind still sells",
         "tools " + JSON.stringify(afterSecond.tools) + " spray " + afterSecond.spray);
-  check((await body(p)).includes("一个月只能买一件"), "the shelf says why");
+  check((await body(p)).includes("每种一个月只能买一次"), "the shelf states the rule");
   await safeClick(p, "#modal-close");
   await safeClick(p, "#counter-leave", 600);
 

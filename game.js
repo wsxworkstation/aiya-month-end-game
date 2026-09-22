@@ -573,6 +573,7 @@ const PERMANENT_ITEMS = [
       nextStock: {},
       stockTips: {},
       shopOffers: [],
+      boughtItems: {},
       pendingROI: [],
       monthLog: [],
       lastFateId: null,
@@ -763,7 +764,8 @@ const PERMANENT_ITEMS = [
     state.freeFood = false;
     state.marketHint = ownedBonus("hint") > 0;
     state.rentPaid = false;
-    state.flags = { work: false, food: false, fun: false, roi: false, partTimeDrawn: false, stockBought: false, boughtTool: false };
+    state.boughtItems = {};
+    state.flags = { work: false, food: false, fun: false, roi: false, partTimeDrawn: false, stockBought: false };
     state.stockOffers = [];
     if (!state.pendingStock || !Object.keys(state.pendingStock).length) state.pendingStock = rollStockChanges();
     if (!state.nextStock || !Object.keys(state.nextStock).length) state.nextStock = rollStockChanges();
@@ -1558,15 +1560,16 @@ const PERMANENT_ITEMS = [
     const consumable = (offers.consumable || []).map(shopItem).filter(Boolean);
     const shelf = (items, kind) => items.map(item => {
       const owned = kind === "permanent" && state.permanentItems.includes(item.id);
+      const boughtAlready = kind === "consumable" && (state.boughtItems || {})[item.id];
       const full = kind === "permanent" ? state.permanentItems.length >= 3
-        : state.flags.boughtTool || (!item.spray && state.tempTools.length >= 3);
+        : !item.spray && state.tempTools.length >= 3;
       const tooPoor = state.wallet < item.price;
       const note = owned ? "已拥有"
+        : boughtAlready ? `${money(item.price)} · 这个月买过了`
         : tooPoor ? `${money(item.price)} · 钱不够`
-        : kind === "consumable" && state.flags.boughtTool ? `${money(item.price)} · 这个月买过了`
         : full ? `${money(item.price)} · 背包满了`
         : `${money(item.price)} · ${kind === "permanent" ? "永久" : "一次性"}`;
-      const tone = owned || tooPoor || full ? (owned ? "owned" : "unaffordable") : "choice";
+      const tone = owned || boughtAlready ? "owned" : tooPoor || full ? "unaffordable" : "choice";
       return cardMarkup(item, tone, note, shopArt(item));
     }).join("");
 
@@ -1579,7 +1582,7 @@ const PERMANENT_ITEMS = [
       </div>
       <h3 class="shelf-title">永久物品 · 买了一直有效</h3>
       <div class="card-grid">${shelf(permanent, "permanent")}</div>
-      <h3 class="shelf-title">一次性 · 一个月只能买一件${state.flags.boughtTool ? "（这个月买过了）" : ""}</h3>
+      <h3 class="shelf-title">一次性 · 每种一个月只能买一次</h3>
       <div class="card-grid">${shelf(consumable, "consumable")}</div>`);
     $$('.game-card').forEach(button => button.addEventListener("click", () => buyShopItem(button.dataset.cardId)));
   }
@@ -1591,7 +1594,7 @@ const PERMANENT_ITEMS = [
     if (state.wallet < item.price) { showToast("钱包现金不够"); return; }
     if (permanent && state.permanentItems.includes(id)) { showToast("同名物品效果不能叠加"); return; }
     if (permanent && state.permanentItems.length >= 3) { showToast("永久背包满了，先卖掉一件"); return; }
-    if (!permanent && state.flags.boughtTool) { showToast("一次性物品一个月只能买一件"); return; }
+    if (!permanent && state.boughtItems[id]) { showToast(`${item.name}这个月买过了`); return; }
     if (!permanent && !item.spray && state.tempTools.length >= 3) { showToast("一次性背包满了，先用掉一件"); return; }
 
     state.wallet -= item.price;
@@ -1601,11 +1604,11 @@ const PERMANENT_ITEMS = [
       collect("永久物品", item.id);
     } else if (item.spray) {
       state.sprayCharges += 1;
-      state.flags.boughtTool = true;
+      state.boughtItems[item.id] = true;
       collect("一次性物品", item.id);
     } else {
       state.tempTools.push(item.id);
-      state.flags.boughtTool = true;
+      state.boughtItems[item.id] = true;
       collect("一次性物品", item.id);
     }
     // spendEnergy can end the month on the spot, and re-opening the shop over the

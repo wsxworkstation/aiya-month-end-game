@@ -103,9 +103,9 @@ async function enter(p, place, peek) {
   check(await enter(p, "稳稳银行", peek), "walked to the bank");
   const bankText = await body(p);
   check(!(await p.$("#pay-rent-btn")), "the bank does not collect rent any more");
-  check(/本月利息([3-9])%/.test(bankText), "the bank quotes a rate between 3% and 9%",
-        (bankText.match(/本月利息\d+%/) || ["?"])[0]);
-  check(bankText.includes("只收现金"), "it tells you rent is cash, paid at home");
+  check(/本月利息 ([3-9])%/.test(bankText), "the bank leads with a rate between 3% and 9%",
+        (bankText.match(/本月利息 \d+%/) || ["?"])[0]);
+  check(!/房租/.test(bankText), "and says nothing about rent any more", flat(bankText).slice(0, 120));
   await safeClick(p, "#modal-close");
   await safeClick(p, "#counter-leave", 600);
 

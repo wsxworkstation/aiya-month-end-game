@@ -303,7 +303,7 @@ const ROAD_CELL = 6;
     partTime: 20,
     bank: 0,              // paperwork, not effort
     stock: 5,
-    roi: 10,
+    roi: 5,
     shop: 3,
     // Eating and working stay repeatable, so both need diminishing returns or the
     // pair becomes an infinite money loop (buy energy cheap, sell it dear).
@@ -941,6 +941,10 @@ const PERMANENT_ITEMS = [
 
   // Returns false when the player ran out and the month ended under them, so callers
   // can stop before charging money for something that no longer happens.
+  function hasEnergyFor(cost) {
+    return !!state && state.motivation > cost;
+  }
+
   function spendEnergy(amount) {
     if (!state || amount <= 0) return true;
     state.motivation -= amount;
@@ -1254,6 +1258,10 @@ const PERMANENT_ITEMS = [
 
   function showPartTime() {
     if (state.flags.partTimeDrawn) { simpleMessage("这个月抽过了", "公告板只剩『免费加班』。", "📌"); return; }
+    if (!hasEnergyFor(ENERGY.partTime)) {
+      simpleMessage("站都站不稳了", `兼职要${ENERGY.partTime}点动力，你只剩${Math.round(state.motivation)}。先去吃点东西。`, "😮‍💨");
+      return;
+    }
     state.flags.partTimeDrawn = true;
     const jobs = shuffle(PART_TIME).slice(0, 3);
     const tipped = shuffle(STOCKS).slice(0, 3);
@@ -1370,14 +1378,12 @@ const PERMANENT_ITEMS = [
   }
 
   function showBank() {
-    const rent = currentRent();
-    const rentLine = state.rentPaid
-      ? `<div class="result-box positive">本月房租 ${money(rent)} 已经交了。</div>`
-      : `<div class="result-box">本月房租 <strong>${money(rent)}</strong>，回家交给房东，只收现金。<br>
-          <small>钱包现在 ${money(state.wallet)}，不够就先提款。</small></div>`;
-    openModal(`<p class="eyebrow">稳稳银行 · 本月利息${Math.round(state.bankRate * 100)}%</p><h2>钱要放对地方</h2>
+    const rate = Math.round(state.bankRate * 100);
+    const rateLine = `<div class="result-box">本月利息 <strong>${rate}%</strong>，月底结算。<br>
+      <small>存 ${money(1000)} 进来，月底变 ${money(1000 + Math.round(1000 * state.bankRate))}。利息每个月 3%～9% 不一样。</small></div>`;
+    openModal(`<p class="eyebrow">稳稳银行</p><h2>本月利息 ${rate}%</h2>
       <div class="status-strip"><span class="status-chip">钱包 ${money(state.wallet)}</span><span class="status-chip">银行 ${money(state.bank)}</span><span class="status-chip">债务 ${money(state.debt)}</span></div>
-      ${rentLine}
+      ${rateLine}
       <div class="input-row"><label>金额<input id="bank-amount" type="number" min="1" step="10" value="100"></label>
         <button id="deposit-btn" class="pixel-btn primary">存入银行</button><button id="withdraw-btn" class="pixel-btn">从银行提款</button><button id="repay-btn" class="pixel-btn danger">偿还债务</button></div>`);
     $("#deposit-btn").addEventListener("click", () => bankTransfer("deposit"));
@@ -1466,6 +1472,7 @@ const PERMANENT_ITEMS = [
       if (currentQty + qty > 10) { showToast("这只股票最多持有10股"); return; }
       const cost = qty * price;
       const payment = $("#stock-payment").value;
+      if (!hasEnergyFor(ENERGY.stock)) { showToast(`动力不够，买卖要${ENERGY.stock}点`); return; }
       if (!spendCombined(cost, payment)) { showToast("钱包和银行加起来也不够"); return; }
       const old = state.holdings[id] || { qty: 0, avg: 0 };
       state.holdings[id] = { qty: old.qty + qty, avg: Math.round((old.avg * old.qty + cost) / (old.qty + qty)) };
@@ -1480,6 +1487,7 @@ const PERMANENT_ITEMS = [
   function sellStock(id) {
     const holding = state.holdings[id];
     if (!holding?.qty) return;
+    if (!hasEnergyFor(ENERGY.stock)) { showToast(`动力不够，买卖要${ENERGY.stock}点`); return; }
     const stock = STOCKS.find(item => item.id === id), price = state.stockPrices[id].price;
     holding.qty -= 1;
     state.wallet += price;
@@ -1492,9 +1500,13 @@ const PERMANENT_ITEMS = [
   function showROI() {
     if (state.flags.roi) { simpleMessage("本月已经投过了", "投资需要一点耐心。下个月钱会自动进入银行。", "🎯"); return; }
     const lastMonth = state.month >= TOTAL_MONTHS;
+    const tooTired = !hasEnergyFor(ENERGY.roi);
     openModal(`<p class="eyebrow">ROI研究所</p><h2>选择风险，再抽回报</h2><div class="status-strip"><span class="status-chip">投资一次 动力-${ENERGY.roi}</span><span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
       <p class="modal-intro">${lastMonth ? "最后一个月，这笔钱会在月底结算时直接进银行。" : "钱锁一个月，下月自动进银行。"}</p>
-      <div class="card-grid">${ROI_TYPES.map(type => cardMarkup(type, type.color, `${type.min}% ～ +${type.max}%`, `roi:${type.id}`)).join("")}</div>`);
+      ${tooTired ? `<div class="result-box negative">动力只剩 ${Math.round(state.motivation)}，投一次要 ${ENERGY.roi}。先去食堂吃点东西再回来。</div>` : ""}
+      <div class="card-grid">${ROI_TYPES.map(type => cardMarkup(type, tooTired ? "unaffordable" : type.color,
+        tooTired ? "动力不够" : `${type.min}% ～ +${type.max}%`, `roi:${type.id}`)).join("")}</div>`);
+    if (tooTired) return;
     $$('.game-card').forEach(button => button.addEventListener("click", () => chooseROIAmount(button.dataset.cardId)));
   }
 
@@ -1502,7 +1514,7 @@ const PERMANENT_ITEMS = [
     const type = ROI_TYPES.find(item => item.id === typeId);
     const ceiling = Math.min(ROI_MAX, Math.floor(combinedFunds()));
     openModal(`<p class="eyebrow">${type.name}</p><h2>投入多少？</h2>
-      <p>可能回报：${type.min}%至+${type.max}%。每次最多投 ${money(ROI_MAX)}，不管哪一种项目。</p>
+      <p>可能回报：${type.min}%至+${type.max}%。每次最多投 ${money(ROI_MAX)}，不管哪一种项目。动力-${ENERGY.roi}。</p>
       <div class="status-strip">
         <span class="status-chip">钱包 ${money(state.wallet)}</span>
         <span class="status-chip">银行 ${money(state.bank)}</span>
@@ -1514,7 +1526,7 @@ const PERMANENT_ITEMS = [
       </div>
       <p id="roi-range" class="modal-intro"></p>
       <div class="button-row">
-        <button id="roi-go" class="pixel-btn primary" ${ceiling < ROI_MIN ? "disabled" : ""}>${ceiling < ROI_MIN ? `至少要 ${money(ROI_MIN)}` : "投下去"}</button>
+        <button id="roi-go" class="pixel-btn primary" ${ceiling < ROI_MIN || !hasEnergyFor(ENERGY.roi) ? "disabled" : ""}>${!hasEnergyFor(ENERGY.roi) ? `动力不够（要${ENERGY.roi}点）` : ceiling < ROI_MIN ? `至少要 ${money(ROI_MIN)}` : "投下去"}</button>
         <button id="roi-max" class="pixel-btn">全下 ${money(ceiling)}</button>
         <button id="back-roi" class="pixel-btn ghost">返回</button>
       </div>`);
@@ -1537,6 +1549,7 @@ const PERMANENT_ITEMS = [
   }
 
   function investROI(type, amount, payment) {
+    if (!hasEnergyFor(ENERGY.roi)) { showToast(`动力不够，投资要${ENERGY.roi}点`); return; }
     if (amount < ROI_MIN) { showToast(`至少要投 ${money(ROI_MIN)}`); return; }
     if (amount > ROI_MAX) { showToast(`每次最多投 ${money(ROI_MAX)}`); return; }
     if (!spendCombined(amount, payment)) { showToast("钱包加银行都不够"); return; }
@@ -1561,15 +1574,17 @@ const PERMANENT_ITEMS = [
     const shelf = (items, kind) => items.map(item => {
       const owned = kind === "permanent" && state.permanentItems.includes(item.id);
       const boughtAlready = kind === "consumable" && (state.boughtItems || {})[item.id];
+      const tooTired = !hasEnergyFor(ENERGY.shop);
       const full = kind === "permanent" ? state.permanentItems.length >= 3
         : !item.spray && state.tempTools.length >= 3;
       const tooPoor = state.wallet < item.price;
       const note = owned ? "已拥有"
         : boughtAlready ? `${money(item.price)} · 这个月买过了`
+        : tooTired ? `${money(item.price)} · 动力不够`
         : tooPoor ? `${money(item.price)} · 钱不够`
         : full ? `${money(item.price)} · 背包满了`
         : `${money(item.price)} · ${kind === "permanent" ? "永久" : "一次性"}`;
-      const tone = owned || boughtAlready ? "owned" : tooPoor || full ? "unaffordable" : "choice";
+      const tone = owned || boughtAlready ? "owned" : tooTired || tooPoor || full ? "unaffordable" : "choice";
       return cardMarkup(item, tone, note, shopArt(item));
     }).join("");
 
@@ -1578,8 +1593,9 @@ const PERMANENT_ITEMS = [
         <span class="status-chip">钱包 ${money(state.wallet)}</span>
         <span class="status-chip">永久 ${state.permanentItems.length}/3</span>
         <span class="status-chip">一次性 ${state.tempTools.length}/3</span>
-        <span class="status-chip">买一件 动力-${ENERGY.shop}</span>
+        <span class="status-chip${hasEnergyFor(ENERGY.shop) ? "" : " warn"}">买一件 动力-${ENERGY.shop}</span>
       </div>
+      ${hasEnergyFor(ENERGY.shop) ? "" : `<div class="result-box negative">动力只剩 ${Math.round(state.motivation)}，买一件要 ${ENERGY.shop}。</div>`}
       <h3 class="shelf-title">永久物品 · 买了一直有效</h3>
       <div class="card-grid">${shelf(permanent, "permanent")}</div>
       <h3 class="shelf-title">一次性 · 每种一个月只能买一次</h3>
@@ -1594,6 +1610,7 @@ const PERMANENT_ITEMS = [
     if (state.wallet < item.price) { showToast("钱包现金不够"); return; }
     if (permanent && state.permanentItems.includes(id)) { showToast("同名物品效果不能叠加"); return; }
     if (permanent && state.permanentItems.length >= 3) { showToast("永久背包满了，先卖掉一件"); return; }
+    if (!hasEnergyFor(ENERGY.shop)) { showToast(`动力不够，买东西要${ENERGY.shop}点`); return; }
     if (!permanent && state.boughtItems[id]) { showToast(`${item.name}这个月买过了`); return; }
     if (!permanent && !item.spray && state.tempTools.length >= 3) { showToast("一次性背包满了，先用掉一件"); return; }
 

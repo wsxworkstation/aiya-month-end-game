@@ -188,7 +188,6 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
 .card-grid { clear: both; display: grid; grid-template-columns: repeat(3, minmax(0, 205px)); justify-content: center; gap: 18px; margin-top: 18px; }
 .game-card {
   position: relative;
-  aspect-ratio: 4 / 5;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -215,7 +214,7 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
 .game-card.owned .card-meta { color: var(--green); }
 .game-card.unaffordable { background: #efe9e2; opacity: .62; }
 .game-card.unaffordable .card-meta { color: var(--red); }
-.card-art { position: relative; display: grid; place-items: center; flex: 0 0 44%; overflow: hidden; border: 3px solid #332743; border-radius: 8px; background-color: #ded5c2; background-image: var(--card-image); background-size: var(--card-size, cover); background-position: var(--card-x, center) var(--card-y, center); background-repeat: no-repeat; box-shadow: inset 0 0 0 2px rgba(255,255,255,.5); }
+.card-art { position: relative; display: grid; place-items: center; flex: 0 0 auto; aspect-ratio: 1; overflow: hidden; border: 3px solid #332743; border-radius: 8px; background-color: #ded5c2; background-image: var(--card-image); background-size: var(--card-size, cover); background-position: var(--card-x, center) var(--card-y, center); background-repeat: no-repeat; box-shadow: inset 0 0 0 2px rgba(255,255,255,.5); }
 .card-art::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(135deg, rgba(255,255,255,.28), transparent 32%, transparent 70%, rgba(20,12,35,.14)); }
 .card-icon { font-size: 48px; }
 .card-body { min-height: 0; display: flex; flex: 1; flex-direction: column; gap: 4px; padding: 7px 4px 3px; }
@@ -227,7 +226,7 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
 /* No divider rule: on a narrow card the copy above it wrapped onto the line and the
    dash pattern struck straight through the text. */
 .card-meta { margin-top: auto; padding-top: 5px; font-weight: 900; font-size: 10px; color: #54388b; }
-.game-card.work-card .card-art { flex-basis: 40%; }
+.game-card.work-card .card-art { aspect-ratio: 1; }
 .game-card.work-card .card-body { gap: 5px; padding: 6px 4px 3px; }
 .game-card.work-card .card-title { font-size: 16px; line-height: 1.08; }
 .game-card.work-card .card-copy {
@@ -270,7 +269,7 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
 .collection-card.is-found:hover { transform: translateY(-3px); }
 .collection-card .game-card { width: 100%; padding: 5px; pointer-events: none; border-width: 3px; border-radius: 11px; box-shadow: 0 0 0 2px #d9a62e, 4px 5px 0 rgba(25,19,44,.28); }
 .collection-card .game-card:hover { transform: none; }
-.collection-card .card-art { flex-basis: 58%; border-width: 2px; border-radius: 6px; }
+.collection-card .card-art { border-width: 2px; border-radius: 6px; }
 .collection-card .card-body { gap: 2px; padding: 5px 2px 2px; }
 .collection-card .card-title { display: -webkit-box; overflow: hidden; font-size: 11px; line-height: 1.15; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .collection-card .card-copy { display: none; }
@@ -306,7 +305,7 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
   .interaction-hint { display: none !important; }
   .month-checklist { top: 118px; right: 7px; bottom: auto; min-width: 0; padding: 7px; gap: 3px; font-size: 10px; opacity: .92; }
   .toast { top: 118px; max-width: calc(100vw - 24px); text-align: center; }
-  .card-grid { grid-template-columns: repeat(3, minmax(165px, 58vw)); justify-content: start; gap: 14px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; padding: 8px 10px 16px; margin-left: -10px; margin-right: -10px; }
+  .card-grid { grid-template-columns: repeat(3, minmax(196px, 66vw)); justify-content: start; gap: 14px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; padding: 8px 10px 16px; margin-left: -10px; margin-right: -10px; }
   .inventory-grid { grid-template-columns: 1fr; }
   .collection-grid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); overflow: visible; padding: 0; }
   .game-card { width: 100%; }
@@ -342,7 +341,7 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
   .location-label { top: 7px; max-width: calc(100vw - 140px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
   .dpad { grid-template-columns: repeat(3, 46px); grid-template-rows: repeat(2, 46px); gap: 4px; }
   .action-button { width: 82px; height: 47px; font-size: 16px; }
-  .card-grid { grid-template-columns: repeat(3, minmax(158px, 58vw)); }
+  .card-grid { grid-template-columns: repeat(3, minmax(188px, 64vw)); }
   .collection-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .card-title { font-size: 15px; }
   .card-copy { font-size: 11px; }
@@ -460,8 +459,10 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
   /* The 4:5 ratio fixes the height from the width, so a long effect line simply has
      nowhere to go and spills out of the frame. On a 390px-tall screen let the revealed
      card grow to fit its text instead. */
-  .reveal-card .game-card { aspect-ratio: auto; min-height: 0; }
-  .reveal-card .card-art { flex: 0 0 auto; height: 58px; }
+  .reveal-card .game-card { min-height: 0; }
+  /* Narrow it rather than flatten it: the cell is square, so losing height alone is
+     what turned the characters into pancakes. */
+  .reveal-card .card-art { width: 76px; margin: 0 auto; }
   .reveal-card .card-title { font-size: 13px; line-height: 1.2; }
   .reveal-card .card-copy { font-size: 10px; line-height: 1.3; }
   /* No room for the near-miss flourish or the blurb on a 390px-tall screen: keeping

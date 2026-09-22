@@ -37,7 +37,7 @@ const ROAD_MASK = literal("ROAD_MASK", "[");
 const ROAD_CELL = Number((source.match(/const ROAD_CELL = (\d+)/) || [])[1] || 6);
 
 const house = HOUSES[0];
-const buildings = [...BASE_BUILDINGS, { id: "home", label: house.name, x: house.x, y: house.y, w: house.w, h: house.h }];
+const buildings = [...BASE_BUILDINGS, { id: "home", label: house.name, doorX: house.doorX, x: house.x, y: house.y, w: house.w, h: house.h }];
 
 // Mirrors game.js
 const MIN_X = 14, MAX_X = 946, MIN_Y = 18, MAX_Y = 520;
@@ -48,7 +48,7 @@ const isBlocked = (x, y) => {
   const row = ROAD_MASK[Math.floor(y / ROAD_CELL)];
   return !row || row[Math.floor(x / ROAD_CELL)] === "0";
 };
-const getDoor = (b) => ({ x: b.x + b.w / 2, y: b.y + b.h + 8 });
+const getDoor = (b) => ({ x: b.doorX ?? b.x + b.w / 2, y: b.y + b.h + 8 });
 
 function standingSpot(building) {
   const door = getDoor(building);
@@ -63,8 +63,11 @@ function standingSpot(building) {
   return { x: door.x, y: clamp(door.y + 20, MIN_Y, MAX_Y) };
 }
 
-const targets = buildings.map(b => ({ name: b.label, point: getDoor(b), radius: 46 }));
-targets.push({ name: BOARD.label, point: { x: BOARD.x, y: BOARD.y }, radius: 46 });
+// Mirrors INTERACT_RADIUS in game.js: a checker that is more forgiving than the game
+// will pass a door the player can never actually trigger.
+const RADIUS = Number((source.match(/const INTERACT_RADIUS = (\d+)/) || [])[1] || 36);
+const targets = buildings.map(b => ({ name: b.label, point: getDoor(b), radius: RADIUS }));
+targets.push({ name: BOARD.label, point: { x: BOARD.x, y: BOARD.y }, radius: RADIUS });
 
 let failures = 0;
 const fail = (msg) => { failures++; console.log("  FAIL " + msg); };

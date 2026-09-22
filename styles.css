@@ -133,7 +133,9 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
 .hud-brand, .hud-clock, .hud-actions { display: flex; align-items: center; gap: 9px; padding: 7px 9px; border: 1px solid rgba(255,255,255,.1); border-radius: 13px; background: rgba(255,255,255,.055); }
 .hud-brand { flex: 0 0 auto; }
 .mini-logo { display: grid; place-items: center; width: 42px; height: 42px; color: #271f36; background: linear-gradient(145deg, #ffdc68, #efa842); border: 0; border-radius: 11px; box-shadow: inset 0 1px 0 rgba(255,255,255,.55); font-weight: 900; }
-.hud-brand strong { font-size: 13px; white-space: nowrap; }
+.hud-brand { flex-direction: column; align-items: flex-start; gap: 1px; }
+.hud-brand strong { font-size: 15px; white-space: nowrap; }
+.hud-brand #month-total { color: rgba(255,255,255,.55); font-size: 10px; font-weight: 700; white-space: nowrap; }
 .hud-stats { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(92px, 1fr)); gap: 7px; }
 .hud-stat { position: relative; min-width: 0; display: flex; flex-direction: column; justify-content: center; min-height: 52px; padding: 7px 10px 7px 39px; overflow: hidden; border: 1px solid rgba(255,255,255,.09); border-radius: 12px; background: rgba(255,255,255,.06); }
 .hud-stat::before { position: absolute; left: 10px; top: 50%; width: 21px; height: 21px; display: grid; place-items: center; transform: translateY(-50%); border-radius: 7px; color: #1d1830; background: #ffd361; font-size: 12px; font-weight: 900; }
@@ -317,7 +319,10 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
   .title-actions #new-game-btn { grid-column: auto; }
   h1 { font-size: clamp(36px, 13vw, 56px); }
   .hud-brand { width: auto; padding: 6px; }
-  .hud-brand strong { display: none; }
+  /* The month used to vanish here, leaving an empty box in the corner of a phone. */
+  .hud-brand { flex-direction: column; align-items: flex-start; gap: 0; }
+  .hud-brand strong { font-size: 12px; }
+  .hud-brand #month-total { font-size: 9px; }
   .mini-logo { width: 36px; height: 36px; font-size: 11px; }
   .hud-clock { min-width: 94px; padding: 5px; }
   .hud-clock strong { font-size: 20px; }
@@ -326,6 +331,8 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
   .hud-stat { min-height: 45px; padding: 5px 5px 5px 31px; }
   .hud-stat::before { left: 6px; width: 19px; height: 19px; font-size: 10px; }
   .hud-stat strong { font-size: 12px; }
+  /* "50 · 普通" was wider than the tile and got cut to "50 · …". */
+  .hud-stat.luck strong { font-size: 11px; letter-spacing: -.02em; }
   .hud-stat span { font-size: 9px; }
   .modal { padding: 18px; }
   .modal-layer { padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)); }
@@ -492,8 +499,9 @@ h1 span { color: #ffd15a; text-shadow: 3px 4px 0 #b55537; }
 
 /* Rent comes out of the bank; when it will not cover this month's rent the tile goes
    red. This replaced a floating banner that covered the map's building labels. */
-.hud-stat.bank.short { border-color: rgba(255,120,120,.75); background: rgba(219,65,76,.22); }
-.hud-stat.bank.short strong { color: #ffb4b4; }
+/* Rent is cash out of the wallet, so that is the tile that goes red when it is short. */
+.hud-stat.short { border-color: rgba(255,120,120,.75); background: rgba(219,65,76,.22); }
+.hud-stat.short strong { color: #ffb4b4; }
 .hud-stat.bank.short::before { background: #db414c; color: #fff; }
 
 .status-chip.warn { color: #8a3b18; background: #ffe0bd; border-color: #b4622d; }

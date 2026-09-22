@@ -73,21 +73,39 @@
   }
   ctx.imageSmoothingEnabled = true;
 
+  // A year was too long to hold: the back half repeated itself and the rent curve had
+  // to stay gentle to survive it. Seven months keeps every month load-bearing.
+  const TOTAL_MONTHS = 7;
+
+  // Sleeping is what carries you into next month in one piece, so it is the reward for
+  // getting the month's three jobs done. Run out of energy instead and you collapse
+  // outdoors, which ends the month too -- just badly.
+  const MONTH_TASKS = [
+    { flag: "work", label: "工作", where: "摸鱼有限公司" },
+    { flag: "food", label: "吃饭", where: "月底食堂" },
+    { flag: "roi", label: "ROI", where: "ROI研究所" }
+  ];
+  const unfinishedTasks = () => MONTH_TASKS.filter(task => !state.flags[task.flag]);
+
+
   const HOUSES = [
-    { id: "home", name: "你的小窝", icon: "🏠", rent: 220, sleep: 20, x: 404, y: 378, w: 152, h: 100, color: "#e28c68" }
+    { id: "home", name: "你的小窝", icon: "🏠", rent: 220, sleep: 20, doorX: 480, x: 404, y: 378, w: 152, h: 100, color: "#e28c68" }
   ];
 
   // Collision footprints follow town-map-v2.png. The new map is deliberately simple:
   // one broad loop road, short direct approaches, and one home. Every entrance faces
   // the same connected road system -- re-run scripts/check-layout before moving one.
   const BASE_BUILDINGS = [
-    { id: "work", label: "摸鱼有限公司", icon: "💼", labelDX: 62, x: 130, y: 38, w: 128, h: 132, color: "#df795f" },
-    { id: "bank", label: "稳稳银行", icon: "🏦", x: 308, y: 38, w: 132, h: 132, color: "#e9c352" },
-    { id: "stock", label: "涨跌交易所", icon: "📈", x: 528, y: 30, w: 128, h: 142, color: "#5d9bd4" },
-    { id: "roi", label: "回报研究所", icon: "🎯", x: 726, y: 36, w: 138, h: 146, color: "#8771bd" },
-    { id: "food", label: "月底食堂", icon: "🍜", x: 20, y: 230, w: 168, h: 104, color: "#ec9a49" },
-    { id: "fun", label: "开心一下", icon: "🕹️", x: 796, y: 226, w: 148, h: 108, color: "#d7659a" },
-    { id: "shop", label: "包好运杂货铺", icon: "🔮", x: 738, y: 374, w: 146, h: 104, color: "#6db789" }
+    // doorX is read off town-map-v2.png, not assumed to be the middle of the footprint.
+    // The restaurant's door is round the side behind its tables and the arcade's is off
+    // to the left of its plant pots, so the centre put you at a wall, not an entrance.
+    { id: "work", label: "摸鱼有限公司", icon: "💼", labelDX: 62, doorX: 210, x: 130, y: 38, w: 128, h: 132, color: "#df795f" },
+    { id: "bank", label: "稳稳银行", icon: "🏦", doorX: 365, x: 308, y: 38, w: 132, h: 132, color: "#e9c352" },
+    { id: "stock", label: "涨跌交易所", icon: "📈", doorX: 584, x: 528, y: 30, w: 128, h: 142, color: "#5d9bd4" },
+    { id: "roi", label: "ROI研究所", icon: "🎯", doorX: 775, x: 726, y: 36, w: 138, h: 146, color: "#8771bd" },
+    { id: "food", label: "月底食堂", icon: "🍜", doorX: 148, x: 20, y: 230, w: 168, h: 104, color: "#ec9a49" },
+    { id: "fun", label: "开心一下", icon: "🕹️", doorX: 838, x: 796, y: 226, w: 148, h: 108, color: "#d7659a" },
+    { id: "shop", label: "包好运杂货铺", icon: "🔮", doorX: 789, x: 738, y: 374, w: 146, h: 104, color: "#6db789" }
   ];
 
   const BOARD = { x: 480, y: 327, label: "兼职公告板", icon: "📋" };
@@ -123,9 +141,9 @@ const ROAD_CELL = 6;
     "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
     "0011100000221111111000000111111111111111111111111112112221111111120000021111222211111111111111111111111111111111111111111111111110111112121111111000000000000000",
     "1111111111211111111111111111111111111111111111111111111121111111122211111111222222111111111111111111111111111111111111111111111111111112111111111100000000000000",
-    "1111111112211111111111111101111111110000011111111122112221111111122211221111222222111111001111111111111100001111111111110001111111000002112222211100000000000000",
-    "1111111122111111111111111101111111111111111111111111121220111111021112111111222212211111000000000000000000011111111111110001111111000001112121111100000000000000",
-    "1111111111221121111111111110000000002111111111111111111220000000021111111111122222211111000000000000000000011111111111111120000001000001111111111100000000000000",
+    "1111111112211111111111111111111111111111111111111122112221111111122211221111222222111111001111111111111100001111111111111111111111111112112222211100000000000000",
+    "1111111122111111111111111111111111111111111111111111121220111111021112111111222212211111000000000000000000011111111111111111111111111111112121111100000000000000",
+    "1111111111221121111111111110000000002111111111111111111220000000021111111111122222211111000000000000000000011111111111111120000001111111111111111100000000000000",
     "1111111111112221222111111110000000001111111112211111111120000000021111111111122122211111110000000000000011111111111111111110000001111211111111100100000000000000",
     "1111111111112211122111111110000000001111111122211112111212000000211111211111222222211111111112000000000011211112222211111110000001122211111111000000000000000000",
     "1111111111111221111111111110000000001111111122222112111222000000222111211111222222211111111222121121222111111122222211111110000002111111111111000000000000000000",
@@ -142,23 +160,23 @@ const ROAD_CELL = 6;
     "2111111111111111111111111112222222222222222222222222222211111111111112221112211211121112211111111122112222222222222222222222222222222222221111122222222111111122",
     "2111111111111110000000111111122222211222222222222222211112111111112111111111112121121111111111111121111112222222222222222222122222211111111111111111221111111121",
     "1111111111111000000000111111111111112222222222222221111111111121111111111111112121121111111111111111111111122222222222222221111122111111111111111111111111111222",
-    "2211111111100000000000110000011111111112222222222211111111111111111111111111111112121111111111111111111111112222222222222221111111111111111111111111111111111121",
-    "1111111111000000000002220000011111111122222222222211111221111111111111211111111111111122211111111121111111111222222222222111111111111111110000011111111111111112",
-    "1111111100000000000001110000011111111112222222222112111111112221111121112111111111111111121111111121111111121222222222221111111111000000000000000000011111111122",
+    "2211111111100000000000111111111111111112222222222211111111111111111111111111111112121111111111111111111111112222222222222221111111111111111111111111111111111121",
+    "1111111111000000000002221111111111111122222222222211111221111111111111211111111111111122211111111121111111111222222222222111111111111111110000011111111111111112",
+    "1111111100000000000001111111111111111112222222222112111111112221111121112111111111111111121111111121111111121222222222221111111111000000000000000000011111111122",
     "1111111100000000000001111112212111111111222222222111111112222211111111111112111111111111121221111111111111111222222222211111111111000000000000000000000111211222",
-    "1111111100000000000001211221221211111111222222222111111111111111111111111111100000111111111121111111111111111222222222221111111111000000000000000000000021222221",
-    "1111111100000000002121121121121111111121222222222111211111111111000001111211100000112211111111111111121111111122222222211211111111000000000000000000000021222222",
-    "1111111100000000001212111111111111111111222222222111211111111111000001111121100000111111111111111121121111111122222222211111211111000000000000000000000011222222",
-    "1111111110000000001211111111111111111111222222222112211111112111000002111111111212121111111121111121112111111222222222211121211111120000000000000000211111122222",
-    "1111111110000000000111111111100111111111222222222121111111212111112112211111112211111111111121111111121111112222222222221121111111110000000000000000111111111222",
-    "1111111111000000000111201111100111111121222222222111111112112111111111111111111111111111111121111111111112121222222222221211111111110000000000000000111111111222",
-    "2211111111000000000121100000000111111111222222222111111111111111111111112211111111111211111111111111111111111222222222222211111111120000000002200000211111111112",
-    "2221222111000000111111100000022111211111222222222210000011111211111121111111111101111111111111111211121111111222222222222221111111110000000001100000111111111111",
-    "2221222111111111111111120000011111111112222222222210000001111212111111112110000001111111111111221211111111112222222222221221111111110000000001100000111111111111",
-    "2222222211111111111111110000011111111122222222222220000000000112221111111120000002211111111112111111111111122222222222221122111111110000000001100000111111111111",
-    "2212221122111121111112110000021111112222222222222222000000000121112111111120000021112111111111112100000211222222222222222211112111111100000001111111111111111111",
-    "2111111122211112111211110000011111222222222222222222220000000111121111111110000011111121111111111100000112222222222222222212212122111111221112112111111111111111",
-    "2211111222222111121111220000011222222222222222222222222200000111111211111120000011111121111111111100000222222222222222222222222222111111111112111211112111111111",
+    "1111111100000000000001211221221211111111222222222111111111111111111111111111111111111111111121111111111111111222222222221111111111000000000000000000000021222221",
+    "1111111100000000002121121121121111111121222222222111211111111111111111111211111111112211111111111111121111111122222222211211111111000000000000000000000021222222",
+    "1111111100000000001212111111111111111111222222222111211111111111111111111121111111111111111111111121121111111122222222211111211111000000000000000000000011222222",
+    "1111111110000000001211111111111111111111222222222112211111112111111112111111111212121111111121111121112111111222222222211121211111120000000000000000211111122222",
+    "1111111110000000000111111111111111111111222222222121111111212111112112211111112211111111111121111111121111112222222222221121111111110000000000000000111111111222",
+    "1111111111000000000111211111111111111121222222222111111112112111111111111111111111111111111121111111111112121222222222221211111111110000000000000000111111111222",
+    "2211111111000000000121111111111111111111222222222111111111111111111111112211111111111211111111111111111111111222222222222211111111120000000002200000211111111112",
+    "2221222111000000111111111111122111211111222222222211111111111211111121111111111111111111111111111211121111111222222222222221111111110000000001100000111111111111",
+    "2221222111111111111111121111111111111112222222222211111111111212111111112111111111111111111111221211111111112222222222221221111111110000000001100000111111111111",
+    "2222222211111111111111111111111111111122222222222221111111111112221111111121111112211111111112111111111111122222222222221122111111110000000001100000111111111111",
+    "2212221122111121111112111111121111112222222222222222111111111121112111111121111121112111111111112111111211222222222222222211112111111100000001111111111111111111",
+    "2111111122211112111211111111111111222222222222222222221111111111121111111111111111111121111111111111111112222222222222222212212122111111221112112111111111111111",
+    "2211111222222111121111221111111222222222222222222222222211111111111211111121111111111121111111111111111222222222222222222222222222111111111112111211112111111111",
     "1111111112222212212111212122222222222222222122222222222222111111111111112211222222211111111111111111222222222222222112211222222222222222222222222222222222222222",
     "1111111111222222222222222222222222222211111112222222222222222222121221222222222222222221122222222222222222222222222111111222222212222222222222222222222222222222",
     "1111111122222222222222222222222222222211111112222222222222222221222222222222222222222222222222222222222222222222111111112222222211122222222222222222222222222222",
@@ -179,9 +197,9 @@ const ROAD_CELL = 6;
     "0000000000000000000000000000000000000001211111222222222221111111211111111111112111111111111111211111111222222222221111212100000000000000000000011111111111111211",
     "0000000000000000000000000000000000000001111211222222222221111111111111111111121111111111111111121111111222222222221121211111111000000000000000011111112111111111",
     "0000000000000000000000000000000000000001111212222222222211111112111111111121121111111111111111122111111122222222222111211112111100000001100000011111112112211222",
-    "0000000000000000000000000000000000000001111222222222222211111112111111111121120000011121111111111111111122222222222221221111111112222211111111111112111212222222",
-    "0000000000000000000000000000000000000001111122222222222111111122111111111111120000011121111111112211111112222222222211211111111122222211111111111111121222112221",
-    "0000000000000000000000000000000000000001111122222222222111111121112221111111120000011111111112211211111112222222222222111211111111111121111111111211121112221121",
+    "0000000000000000000000000000000000000001111222222222222211111112111111111121121111111121111111111111111122222222222221221111111112222211111111111112111212222222",
+    "0000000000000000000000000000000000000001111122222222222111111122111111111111121111111121111111112211111112222222222211211111111122222211111111111111121222112221",
+    "0000000000000000000000000000000000000001111122222222222111111121112221111111121111111111111112211211111112222222222222111211111111111121111111111211121112221121",
     "0000000000000000000000000000000000000002111122222222221111111112211111111111122222211121111222221211111111222222222211222211111111111111111111112222221211111111",
     "0000000000000000000000000000000000000002121111112211121111111112221212111111122212211111112221112211111111222222111111212222211111111111212122222221121111111111",
     "0000000000000000000000000000000000000001222111111111222121111111111111111111111111211111111111111111111112222222111111111222221221212122222222222111111111111111",
@@ -397,7 +415,7 @@ const PERMANENT_ITEMS = [
     { id: "bus", type: "good", name: "巴士居然没迟到", icon: "🚌", copy: "动力+12", apply: () => state.motivation += 12 },
     { id: "rent", type: "good", name: "房东今天心情很好", icon: "🏠", copy: "本月房租减少20%", apply: () => state.rentDiscount = 0.2 },
     { id: "energy", type: "good", name: "醒来没有腰酸背痛", icon: "✨", copy: "动力+10", apply: () => state.motivation += 10 },
-    { id: "bankday", type: "good", name: "银行庆典月", icon: "🏦", copy: "本月银行利息提高至8%", apply: () => state.bankRate = 0.08 },
+    { id: "bankday", type: "good", name: "银行庆典月", icon: "🏦", copy: "本月银行利息提高到12%", apply: () => state.bankRate = Math.max(state.bankRate, 0.12) },
     { id: "phone", type: "bad", name: "手机自由落体", icon: "📱", copy: "产生$80命运债务", apply: () => state.debt += 80 },
     { id: "cold", type: "bad", name: "冷气开太大，感冒了", icon: "🤧", copy: "动力-14", apply: () => { state.motivation -= 14; } },
     { id: "leak", type: "bad", name: "天花板开始下小雨", icon: "🪣", copy: "产生$60命运债务", apply: () => state.debt += 60 },
@@ -447,6 +465,11 @@ const PERMANENT_ITEMS = [
     { id: "charm", type: "choice", name: "买了个平安符", icon: "🧿", copy: "幸运+8，但钱包-$60", apply: () => { state.luck += 8; state.wallet -= 60; } },
     { id: "durian", type: "choice", name: "榴莲季节到了", icon: "🥭", copy: "动力+20，但钱包-$80", apply: () => { state.motivation += 20; state.wallet -= 80; } }
   ];
+
+  // One ceiling for every project, so "which risk" is the decision and "how much" is
+  // not a way to make the bold one safe.
+  const ROI_MAX = 1000;
+  const ROI_MIN = 50;
 
   const ROI_TYPES = [
     { id: "steady", name: "稳健项目", icon: "🪴", min: -5, max: 12, color: "good" },
@@ -510,6 +533,7 @@ const PERMANENT_ITEMS = [
       bank: 0,
       debt: 0,
       missedRentStreak: 0,
+      rentPaid: false,
       motivation: ENERGY.monthStart,
       energyStart: ENERGY.monthStart,
       phaseReached: 0,
@@ -546,6 +570,7 @@ const PERMANENT_ITEMS = [
       holdings: {},
       stockOffers: [],
       pendingStock: {},
+      nextStock: {},
       stockTips: {},
       shopOffers: [],
       pendingROI: [],
@@ -694,9 +719,10 @@ const PERMANENT_ITEMS = [
       <h2>欢迎来到巴生小镇</h2>
       <div class="result-box">
         <p><strong>动力就是你的一天。</strong>每月${ENERGY.monthStart}点，走路、上班、投资都要扣。没有倒计时，慢慢想没关系。</p>
+        <p><strong>这${TOTAL_MONTHS}个月，每个月要做完三件事：</strong>${MONTH_TASKS.map(task => `${task.label}（${task.where}）`).join("、")}。做完才睡得着。</p>
         <p><strong>① 去公司：</strong>简单／普通／困难三选一。越难越赚，动力扣得越多，数学题也越难。可以做很多次，但加班费会越来越少。</p>
         <p><strong>② 去食堂：</strong>吃饭补回动力，可以吃很多次，但越吃补得越少。</p>
-        <p><strong>③ 去银行：</strong>房租只从银行扣，记得存钱。</p>
+        <p><strong>③ 交房租：</strong>回家交给房东，<strong>只收钱包里的现金</strong>。银行利息每月3%～9%，但存进去就要记得提出来。</p>
         <p><strong>④ 回家睡觉：</strong>睡了下个月动力才回满${ENERGY.monthStart}。<strong>动力归零会当场倒在外面</strong>，下个月只剩${ENERGY.monthStart - ENERGY.noSleepPenalty}。</p>
       </div>
       <p>WASD或方向键走路，靠近门口按E进入。手机使用屏幕按钮。</p>
@@ -724,7 +750,9 @@ const PERMANENT_ITEMS = [
     state.shake = 0;
     // Permanent goods are folded in here rather than read at each use site, so the
     // month always starts from "base + what you own" and temporary boosts stack on top.
-    state.bankRate = 0.05 + ownedBonus("rate");
+    // 3% to 9%, re-rolled monthly. A fixed 5% made "put it in the bank" a decision you
+    // only ever had to make once.
+    state.bankRate = (3 + Math.floor(Math.random() * 7)) / 100 + ownedBonus("rate");
     state.rentDiscount = 0;
     state.monthLuckBonus = 0;
     state.speedBonus = ownedBonus("speed");
@@ -734,9 +762,11 @@ const PERMANENT_ITEMS = [
     state.mathShield = false;
     state.freeFood = false;
     state.marketHint = ownedBonus("hint") > 0;
-    state.flags = { work: false, food: false, fun: false, roi: false, partTimeDrawn: false, stockBought: false };
+    state.rentPaid = false;
+    state.flags = { work: false, food: false, fun: false, roi: false, partTimeDrawn: false, stockBought: false, boughtTool: false };
     state.stockOffers = [];
-    state.pendingStock = rollStockChanges();
+    if (!state.pendingStock || !Object.keys(state.pendingStock).length) state.pendingStock = rollStockChanges();
+    if (!state.nextStock || !Object.keys(state.nextStock).length) state.nextStock = rollStockChanges();
     state.stockTips = {};
     // Two shelves, restocked every month: three permanents and four one-shots. The
     // spray answers the thief, so once thieves exist it is always on the shelf;
@@ -855,6 +885,7 @@ const PERMANENT_ITEMS = [
   function updateHUD() {
     if (!state) return;
     $("#month-label").textContent = `第${state.month}月`;
+    $("#month-total").textContent = `共${TOTAL_MONTHS}月`;
     $("#wallet-label").textContent = money(state.wallet);
     $("#bank-label").textContent = money(state.bank);
     $("#motivation-label").textContent = Math.round(state.motivation);
@@ -868,21 +899,23 @@ const PERMANENT_ITEMS = [
     // Rent is taken from the bank, so falling short matters - but the old banner sat
     // over the map and covered the building labels. Mark the bank tile instead.
     const rent = currentRent();
-    // Rent now falls back to the wallet, so the warning is about combined funds.
-    $(".hud-stat.bank").classList.toggle("short", combinedFunds() < rent);
-    $("#bank-label").title = combinedFunds() < rent ? `钱包加银行都不够付本月房租（${money(rent)}）` : "";
+    // Rent falls back to the wallet, so the warning is about combined funds -- and
+    // there is nothing to warn about once you have actually paid it.
+    const rentShort = !state.rentPaid && state.wallet < rent;
+    $(".hud-stat.wallet").classList.toggle("short", rentShort);
+    $("#wallet-label").title = rentShort ? `钱包现金不够付本月房租（${money(rent)}）` : "";
     $("#bag-count").textContent = state.permanentItems.length + state.tempTools.length + state.sprayCharges;
-    const flags = state.flags;
-    setCheck("work", flags.work);
-    setCheck("food", flags.food);
-    setCheck("fun", flags.fun);
-    setCheck("roi", flags.roi);
+    // Only the three that gate sleeping. A night out is optional, so listing it here
+    // made it look like homework.
+    MONTH_TASKS.forEach(task => setCheck(task.flag, state.flags[task.flag], task.label));
+    setCheck("rent", state.rentPaid, "房租");
   }
 
-  function setCheck(id, done) {
+  function setCheck(id, done, label) {
     const element = $(`#check-${id}`);
+    if (!element) return;
     element.classList.toggle("done", done);
-    element.textContent = `${done ? "✓" : "□"} ${id === "work" ? "工作" : id === "food" ? "吃饭" : id === "fun" ? "娱乐" : "ROI"}`;
+    element.textContent = `${done ? "✓" : "□"} ${label}`;
   }
 
   // Phase comes from cumulative spend, so it only ever moves forward. Eating or using
@@ -932,12 +965,12 @@ const PERMANENT_ITEMS = [
     return `${String(Math.floor(whole / 60)).padStart(2, "0")}:${String(whole % 60).padStart(2, "0")}`;
   }
 
-  // Rent climbs $35 a month. A flat $220 against a first month that already cleared
-  // $1,600 meant the back half of the year had nothing to push against; by month 12
-  // the landlord wants $605 and the shop wants the rest.
+  // Rent climbs $50 a month: $220 in month 1, $520 in month 7. A flat $220 against a
+  // first month that already cleared $1,600 meant nothing to push against, and over
+  // seven months the curve has to be steeper than it was over twelve to still bite.
   function currentRent() {
     const house = HOUSES.find(item => item.id === state.houseId);
-    const base = house.rent + (state.month - 1) * 35;
+    const base = house.rent + (state.month - 1) * 50;
     return Math.round(base * (1 - state.rentDiscount));
   }
 
@@ -968,7 +1001,11 @@ const PERMANENT_ITEMS = [
     return { x: spot.x, y: spot.y, facing: "up", moving: false };
   }
 
-  function getDoor(building) { return { x: building.x + building.w / 2, y: building.y + building.h + 8 }; }
+  // Small enough that the prompt means "you are at the door", not "you are somewhere
+  // in front of the shop". At 46 you could trigger it standing beside the plant pots.
+  const INTERACT_RADIUS = 36;
+
+  function getDoor(building) { return { x: building.doorX ?? building.x + building.w / 2, y: building.y + building.h + 8 }; }
 
   // Where the player stands after stepping out of a door. Walking out onto a fixed
   // offset once dropped the player inside the collision box of whatever building sat
@@ -1051,11 +1088,11 @@ const PERMANENT_ITEMS = [
     }
     const target = buildingList().find(building => {
       const door = getDoor(building);
-      return Math.hypot(state.player.x - door.x, state.player.y - door.y) < 46;
+      return Math.hypot(state.player.x - door.x, state.player.y - door.y) < INTERACT_RADIUS;
     });
     if (target) return target;
     const boardDistance = Math.hypot(state.player.x - BOARD.x, state.player.y - BOARD.y);
-    return boardDistance < 46 ? { id: "parttime", label: BOARD.label } : null;
+    return boardDistance < INTERACT_RADIUS ? { id: "parttime", label: BOARD.label } : null;
   }
 
   function interact() {
@@ -1194,15 +1231,23 @@ const PERMANENT_ITEMS = [
     }));
   }
 
-  // A tip is only worth having if it is true, so it reads this month's already-decided
-  // move rather than last month's history.
-  function stockTipFor(id) {
-    const change = (state.pendingStock || {})[id] ?? 0;
+  function tipWording(change) {
     if (change >= 12) return { text: "会大涨", tone: "good" };
     if (change >= 4) return { text: "会涨一点", tone: "good" };
     if (change > -4) return { text: "大概不动", tone: "flat" };
     if (change > -12) return { text: "会跌一点", tone: "bad" };
     return { text: "会大跌", tone: "bad" };
+  }
+
+  // A tip is only worth having if it is true, so both months read the moves that have
+  // already been decided rather than a guess at history.
+  function stockTipFor(id) { return tipWording((state.pendingStock || {})[id] ?? 0); }
+  function stockTipNextFor(id) { return tipWording((state.nextStock || {})[id] ?? 0); }
+
+  // "This month and next" in one line, which is what makes a tip worth a shift's work:
+  // you can buy now and know whether to hold.
+  function stockOutlook(id) {
+    return `这个月${stockTipFor(id).text}，下个月${stockTipNextFor(id).text}`;
   }
 
   function showPartTime() {
@@ -1215,11 +1260,11 @@ const PERMANENT_ITEMS = [
     runCardDraw({
       eyebrow: "兼职公告板",
       title: "撕一张",
-      hint: "撕下哪张做哪份。工友还会顺便透露一只股票的风声。",
+      hint: "撕下哪张做哪份。工友还会顺便透露一只股票这两个月的风声。",
       candidates: offers,
       faceUp: ({ job, stock }) => `<div class="offer-pair">
         ${cardMarkup(job, "choice", "", `parttime:${job.id}`)}
-        ${cardMarkup({ id: stock.id, name: stock.name, icon: stock.icon, copy: `工友说它这个月${stockTipFor(stock.id).text}` }, "stock", "内幕消息", `stock:${stock.id}`)}
+        ${cardMarkup({ id: stock.id, name: stock.name, icon: stock.icon, copy: `工友说${stockOutlook(stock.id)}` }, "stock", "两个月内幕", `stock:${stock.id}`)}
       </div>`,
       stingFor: ({ job }) => job.pay >= 160 ? 880 : job.pay >= 120 ? 620 : 380,
       confirmLabel: "接下这份工",
@@ -1231,7 +1276,7 @@ const PERMANENT_ITEMS = [
         if (!spendEnergy(ENERGY.partTime)) return;
         closeModal();
         updateHUD();
-        showToast(`兼职完成，得到${money(job.pay)}，还听到${stock.name}的风声`);
+        showToast(`兼职完成，得到${money(job.pay)}，还听到${stock.name}两个月的风声`);
       }
     });
     updateHUD();
@@ -1290,6 +1335,7 @@ const PERMANENT_ITEMS = [
   }
 
   function showFun() {
+    if (state.flags.fun) { simpleMessage("这个月玩过了", "老板笑你：「回家啦，钱留着交房租。」", "🕹️"); return; }
     if (state.wallet < 50) { simpleMessage("钱不够", "娱乐要$50现金。", "👛"); return; }
     openModal(`<p class="eyebrow">开心一下</p><h2>花$50抽一次快乐</h2>
       <p>最差也不会亏动力。</p>
@@ -1323,14 +1369,41 @@ const PERMANENT_ITEMS = [
 
   function showBank() {
     const rent = currentRent();
+    const rentLine = state.rentPaid
+      ? `<div class="result-box positive">本月房租 ${money(rent)} 已经交了。</div>`
+      : `<div class="result-box">本月房租 <strong>${money(rent)}</strong>，回家交给房东，只收现金。<br>
+          <small>钱包现在 ${money(state.wallet)}，不够就先提款。</small></div>`;
     openModal(`<p class="eyebrow">稳稳银行 · 本月利息${Math.round(state.bankRate * 100)}%</p><h2>钱要放对地方</h2>
-      <div class="status-strip"><span class="status-chip">钱包 ${money(state.wallet)}</span><span class="status-chip">银行 ${money(state.bank)}</span><span class="status-chip">债务 ${money(state.debt)}</span><span class="status-chip">房租 ${money(rent)}</span></div>
-      <p class="modal-intro">房租只从银行扣。</p>
+      <div class="status-strip"><span class="status-chip">钱包 ${money(state.wallet)}</span><span class="status-chip">银行 ${money(state.bank)}</span><span class="status-chip">债务 ${money(state.debt)}</span></div>
+      ${rentLine}
       <div class="input-row"><label>金额<input id="bank-amount" type="number" min="1" step="10" value="100"></label>
         <button id="deposit-btn" class="pixel-btn primary">存入银行</button><button id="withdraw-btn" class="pixel-btn">从银行提款</button><button id="repay-btn" class="pixel-btn danger">偿还债务</button></div>`);
     $("#deposit-btn").addEventListener("click", () => bankTransfer("deposit"));
     $("#withdraw-btn").addEventListener("click", () => bankTransfer("withdraw"));
     $("#repay-btn").addEventListener("click", () => bankTransfer("repay"));
+  }
+
+  // The landlord wants cash in hand, so rent only ever comes out of the wallet. That
+  // is what makes "how much do I dare put in the bank" a decision instead of a formality.
+  function chargeRent() {
+    const rent = currentRent();
+    const fromWallet = Math.min(state.wallet, rent);
+    state.wallet -= fromWallet;
+    return { rent, fromWallet, shortfall: rent - fromWallet };
+  }
+
+  function payRent() {
+    if (state.rentPaid) return;
+    const rent = currentRent();
+    if (state.wallet < rent) { showToast("钱包现金不够，先去银行提款"); return; }
+    chargeRent();
+    state.rentPaid = true;
+    state.missedRentStreak = 0;
+    state.monthLog.push({ label: "交房租", amount: -rent, positive: false });
+    beep(520, .12, "square", .04);
+    updateHUD();
+    showHome();
+    showToast(`房租交了 ${money(rent)}`);
   }
 
   function bankTransfer(type) {
@@ -1366,7 +1439,7 @@ const PERMANENT_ITEMS = [
       <div class="card-grid">${offers.map(item => {
         const price = state.stockPrices[item.id];
         const known = state.stockTips[item.id] || state.marketHint;
-        const hint = known ? `内幕：这个月${stockTipFor(item.id).text}` : "趋势每月更新";
+        const hint = known ? `内幕：${stockOutlook(item.id)}` : "趋势每月更新";
         return cardMarkup(item, "stock", `${money(price.price)}/股 · ${hint}`, `stock:${item.id}`);
       }).join("")}</div>
       <h3>我的持仓</h3>
@@ -1416,25 +1489,55 @@ const PERMANENT_ITEMS = [
 
   function showROI() {
     if (state.flags.roi) { simpleMessage("本月已经投过了", "投资需要一点耐心。下个月钱会自动进入银行。", "🎯"); return; }
-    openModal(`<p class="eyebrow">回报研究所</p><h2>选择风险，再抽回报</h2><div class="status-strip"><span class="status-chip">投资一次 动力-${ENERGY.roi}</span><span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
-      <p class="modal-intro">钱锁一个月，下月自动进银行。</p>
+    const lastMonth = state.month >= TOTAL_MONTHS;
+    openModal(`<p class="eyebrow">ROI研究所</p><h2>选择风险，再抽回报</h2><div class="status-strip"><span class="status-chip">投资一次 动力-${ENERGY.roi}</span><span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
+      <p class="modal-intro">${lastMonth ? "最后一个月，这笔钱会在月底结算时直接进银行。" : "钱锁一个月，下月自动进银行。"}</p>
       <div class="card-grid">${ROI_TYPES.map(type => cardMarkup(type, type.color, `${type.min}% ～ +${type.max}%`, `roi:${type.id}`)).join("")}</div>`);
     $$('.game-card').forEach(button => button.addEventListener("click", () => chooseROIAmount(button.dataset.cardId)));
   }
 
   function chooseROIAmount(typeId) {
     const type = ROI_TYPES.find(item => item.id === typeId);
+    const ceiling = Math.min(ROI_MAX, Math.floor(combinedFunds()));
     openModal(`<p class="eyebrow">${type.name}</p><h2>投入多少？</h2>
-      <p>可能回报：${type.min}%至+${type.max}%。付款会自动组合钱包与银行余额。</p>
-      <div class="input-row"><label>优先付款<select id="roi-payment"><option value="wallet">钱包优先</option><option value="bank">银行优先</option><option value="auto">自动组合</option></select></label></div>
-      <div class="button-row">${[100, 200, 300].map(amount => `<button class="pixel-btn ${amount === 200 ? "primary" : ""}" data-roi-amount="${amount}" ${combinedFunds() < amount ? "disabled" : ""}>投入${money(amount)}<br><small>${money(Math.round(amount * (1 + type.min / 100)))}～${money(Math.round(amount * (1 + type.max / 100)))}</small></button>`).join("")}</div>
-      <button id="back-roi" class="pixel-btn ghost" style="margin-top:16px">返回</button>`);
-    $$('[data-roi-amount]').forEach(button => button.addEventListener("click", () => investROI(type, Number(button.dataset.roiAmount), $("#roi-payment").value)));
+      <p>可能回报：${type.min}%至+${type.max}%。每次最多投 ${money(ROI_MAX)}，不管哪一种项目。</p>
+      <div class="status-strip">
+        <span class="status-chip">钱包 ${money(state.wallet)}</span>
+        <span class="status-chip">银行 ${money(state.bank)}</span>
+        <span class="status-chip">这次上限 ${money(ceiling)}</span>
+      </div>
+      <div class="input-row">
+        <label>投入金额<input id="roi-amount" type="number" min="${ROI_MIN}" max="${ceiling}" step="10" value="${clamp(200, ROI_MIN, Math.max(ROI_MIN, ceiling))}"></label>
+        <label>优先付款<select id="roi-payment"><option value="wallet">钱包优先</option><option value="bank">银行优先</option><option value="auto">自动组合</option></select></label>
+      </div>
+      <p id="roi-range" class="modal-intro"></p>
+      <div class="button-row">
+        <button id="roi-go" class="pixel-btn primary" ${ceiling < ROI_MIN ? "disabled" : ""}>${ceiling < ROI_MIN ? `至少要 ${money(ROI_MIN)}` : "投下去"}</button>
+        <button id="roi-max" class="pixel-btn">全下 ${money(ceiling)}</button>
+        <button id="back-roi" class="pixel-btn ghost">返回</button>
+      </div>`);
+    const field = $("#roi-amount");
+    const preview = () => {
+      const amount = roiAmountFrom(field, ceiling);
+      $("#roi-range").textContent = `投 ${money(amount)} 的话，下个月拿回 ${money(Math.round(amount * (1 + type.min / 100)))} 到 ${money(Math.round(amount * (1 + type.max / 100)))}。`;
+    };
+    field.addEventListener("input", preview);
+    preview();
+    $("#roi-max").addEventListener("click", () => { field.value = String(ceiling); preview(); });
+    $("#roi-go").addEventListener("click", () => investROI(type, roiAmountFrom(field, ceiling), $("#roi-payment").value));
     $("#back-roi").addEventListener("click", showROI);
   }
 
+  // One place decides what a typed amount really means, so the preview and the charge
+  // can never disagree about it.
+  function roiAmountFrom(field, ceiling) {
+    return clamp(Math.floor(Number(field.value) || 0), ROI_MIN, Math.max(ROI_MIN, ceiling));
+  }
+
   function investROI(type, amount, payment) {
-    if (!spendCombined(amount, payment)) return;
+    if (amount < ROI_MIN) { showToast(`至少要投 ${money(ROI_MIN)}`); return; }
+    if (amount > ROI_MAX) { showToast(`每次最多投 ${money(ROI_MAX)}`); return; }
+    if (!spendCombined(amount, payment)) { showToast("钱包加银行都不够"); return; }
     const rate = Math.floor(type.min + Math.random() * (type.max - type.min + 1));
     const payout = Math.max(1, Math.round(amount * (1 + rate / 100)));
     state.pendingROI.push({ dueMonth: state.month + 1, amount, payout, rate, name: type.name });
@@ -1456,10 +1559,11 @@ const PERMANENT_ITEMS = [
     const shelf = (items, kind) => items.map(item => {
       const owned = kind === "permanent" && state.permanentItems.includes(item.id);
       const full = kind === "permanent" ? state.permanentItems.length >= 3
-        : !item.spray && state.tempTools.length >= 3;
+        : state.flags.boughtTool || (!item.spray && state.tempTools.length >= 3);
       const tooPoor = state.wallet < item.price;
       const note = owned ? "已拥有"
         : tooPoor ? `${money(item.price)} · 钱不够`
+        : kind === "consumable" && state.flags.boughtTool ? `${money(item.price)} · 这个月买过了`
         : full ? `${money(item.price)} · 背包满了`
         : `${money(item.price)} · ${kind === "permanent" ? "永久" : "一次性"}`;
       const tone = owned || tooPoor || full ? (owned ? "owned" : "unaffordable") : "choice";
@@ -1475,7 +1579,7 @@ const PERMANENT_ITEMS = [
       </div>
       <h3 class="shelf-title">永久物品 · 买了一直有效</h3>
       <div class="card-grid">${shelf(permanent, "permanent")}</div>
-      <h3 class="shelf-title">一次性 · 放进背包，要用才用</h3>
+      <h3 class="shelf-title">一次性 · 一个月只能买一件${state.flags.boughtTool ? "（这个月买过了）" : ""}</h3>
       <div class="card-grid">${shelf(consumable, "consumable")}</div>`);
     $$('.game-card').forEach(button => button.addEventListener("click", () => buyShopItem(button.dataset.cardId)));
   }
@@ -1487,6 +1591,7 @@ const PERMANENT_ITEMS = [
     if (state.wallet < item.price) { showToast("钱包现金不够"); return; }
     if (permanent && state.permanentItems.includes(id)) { showToast("同名物品效果不能叠加"); return; }
     if (permanent && state.permanentItems.length >= 3) { showToast("永久背包满了，先卖掉一件"); return; }
+    if (!permanent && state.flags.boughtTool) { showToast("一次性物品一个月只能买一件"); return; }
     if (!permanent && !item.spray && state.tempTools.length >= 3) { showToast("一次性背包满了，先用掉一件"); return; }
 
     state.wallet -= item.price;
@@ -1496,9 +1601,11 @@ const PERMANENT_ITEMS = [
       collect("永久物品", item.id);
     } else if (item.spray) {
       state.sprayCharges += 1;
+      state.flags.boughtTool = true;
       collect("一次性物品", item.id);
     } else {
       state.tempTools.push(item.id);
+      state.flags.boughtTool = true;
       collect("一次性物品", item.id);
     }
     // spendEnergy can end the month on the spot, and re-opening the shop over the
@@ -1522,10 +1629,29 @@ const PERMANENT_ITEMS = [
 
   function showHome() {
     const house = HOUSES.find(item => item.id === state.houseId);
-    openModal(`<p class="eyebrow">${house.name}</p><h2>要睡觉了吗？</h2>
-      <p>现在是${PHASE_LABELS[dayPhase()]}，你还剩<strong>${Math.round(state.motivation)}</strong>动力。睡觉会结束第${state.month}月，下个月动力回满${ENERGY.monthStart}。</p>
-      <div class="button-row"><button id="sleep-btn" class="pixel-btn primary">睡觉，结束本月</button><button id="not-yet-btn" class="pixel-btn ghost">还没，我再出去一下</button></div>`);
-    $("#sleep-btn").addEventListener("click", () => { closeModal(); endMonth(true); });
+    const left = unfinishedTasks();
+    const rent = currentRent();
+    const checklist = MONTH_TASKS.map(task =>
+      `<span class="status-chip${state.flags[task.flag] ? " good" : " warn"}">${state.flags[task.flag] ? "✔" : "✘"} ${task.label}</span>`).join("");
+    // The landlord waits at the door for cash. Doing it here, by hand, is what makes
+    // leaving money in the bank a gamble rather than a free interest payment.
+    const rentBox = state.rentPaid
+      ? `<div class="result-box positive">第${state.month}月房租 ${money(rent)} 已经交了。</div>`
+      : `<div class="result-box">房东在门口等：第${state.month}月房租 <strong>${money(rent)}</strong>，只收现金。<br>
+          <small>钱包 ${money(state.wallet)}${state.wallet < rent ? "，不够，去银行提款" : ""}。拖到月底他自己来收，还要算你欠租。</small>
+          <button id="pay-rent-btn" class="pixel-btn danger full-button" ${state.wallet < rent ? "disabled" : ""}>${state.wallet < rent ? "现金不够" : `交房租 ${money(rent)}`}</button></div>`;
+    const body = left.length
+      ? `<p>本月还没做完，躺下也睡不着：<strong>${left.map(task => `${task.label}（${task.where}）`).join("、")}</strong>。</p>`
+      : `<p>现在是${PHASE_LABELS[dayPhase()]}，你还剩<strong>${Math.round(state.motivation)}</strong>动力。睡觉会结束第${state.month}月，下个月动力回满${ENERGY.monthStart}。</p>`;
+    openModal(`<p class="eyebrow">${house.name}</p><h2>${left.length ? "还不能睡" : "要睡觉了吗？"}</h2>
+      <div class="status-strip">${checklist}</div>
+      ${rentBox}
+      ${body}
+      <div class="button-row">${left.length
+        ? `<button id="not-yet-btn" class="pixel-btn primary">出去做完它</button>`
+        : `<button id="sleep-btn" class="pixel-btn primary">睡觉，结束本月</button><button id="not-yet-btn" class="pixel-btn ghost">还没，我再出去一下</button>`}</div>`);
+    $("#pay-rent-btn")?.addEventListener("click", payRent);
+    $("#sleep-btn")?.addEventListener("click", () => { closeModal(); endMonth(true); });
     $("#not-yet-btn").addEventListener("click", closeModal);
   }
 
@@ -1589,7 +1715,10 @@ const PERMANENT_ITEMS = [
       entry.price = Math.max(5, Math.round(entry.price * (1 + change / 100)));
       entry.change = change;
     });
-    state.pendingStock = null;   // next month rolls fresh when it begins
+    // Next month's move was already promised to anyone holding a tip, so it becomes
+    // this month's and a fresh one is rolled two months out.
+    state.pendingStock = state.nextStock && Object.keys(state.nextStock).length ? state.nextStock : rollStockChanges();
+    state.nextStock = rollStockChanges();
     return changes;
   }
 
@@ -1613,23 +1742,21 @@ const PERMANENT_ITEMS = [
     state.pendingEnergyPenalty = state.flags.food ? 0 : 10;
     if (state.pendingEnergyPenalty) report.push({ label: "本月一餐都没吃", text: `下个月开局再扣 ${state.pendingEnergyPenalty} 动力` });
 
-    // Rent used to come out of the bank alone, so you could go bankrupt holding $2,860
-    // in cash. The landlord takes the bank first, then whatever is in your pocket, and
-    // only what is still missing after that turns into debt.
-    const rent = currentRent();
-    const fromBank = Math.min(state.bank, rent);
-    state.bank -= fromBank;
-    const fromWallet = Math.min(state.wallet, rent - fromBank);
-    state.wallet -= fromWallet;
-    const shortfall = rent - fromBank - fromWallet;
-    if (shortfall <= 0) {
-      state.missedRentStreak = 0;
-      const where = fromWallet > 0 ? (fromBank > 0 ? `银行${money(fromBank)} + 钱包${money(fromWallet)}` : "从钱包掏的现金") : "银行自动扣";
-      report.push({ label: "支付房租", amount: -rent, text: where, positive: false });
+    // Rent is yours to pay at the bank. If you did, this is just a line in the report;
+    // if you did not, the landlord comes round and takes the bank, then your pocket,
+    // and only what is still missing after that turns into debt.
+    if (state.rentPaid) {
+      report.push({ label: "房租（已在银行交了）", text: money(currentRent()) });
     } else {
-      state.debt += shortfall;
-      state.missedRentStreak += 1;
-      report.push({ label: `房租不足（连续${state.missedRentStreak}月）`, amount: -(fromBank + fromWallet), text: `新增债务${money(shortfall)}`, positive: false });
+      const { rent, fromWallet, shortfall } = chargeRent();
+      if (shortfall <= 0) {
+        state.missedRentStreak = 0;
+        report.push({ label: "房东上门收租", amount: -rent, text: "从钱包掏的现金", positive: false });
+      } else {
+        state.debt += shortfall;
+        state.missedRentStreak += 1;
+        report.push({ label: `房租不足（连续${state.missedRentStreak}月）`, amount: -fromWallet, text: `新增债务${money(shortfall)}`, positive: false });
+      }
     }
 
     if (state.debt > 0) {
@@ -1651,7 +1778,17 @@ const PERMANENT_ITEMS = [
     if (ownedChanges.length) report.push({ label: "股票行情", text: ownedChanges.join("、") });
 
     const failed = state.missedRentStreak >= 3;
-    const finished = state.month >= 12;
+    const finished = state.month >= TOTAL_MONTHS;
+    // ROI locks money up for a month, and there is no month eight to unlock it in. With
+    // ROI now required every month, leaving it in there would mean the last month is a
+    // tax you cannot avoid, so the final report settles whatever is still out.
+    if (finished && state.pendingROI.length) {
+      state.pendingROI.forEach(item => {
+        state.bank += item.payout;
+        report.push({ label: `${item.name}提前结算`, amount: item.payout, positive: true });
+      });
+      state.pendingROI = [];
+    }
     localStorage.removeItem(GAME_KEY);
     showMonthReport(report, slept, failed, finished);
   }
@@ -1663,7 +1800,7 @@ const PERMANENT_ITEMS = [
       <table class="ledger"><tbody>${rows || "<tr><td>这个月很安静</td><td>—</td></tr>"}</tbody></table>
       <div class="status-strip"><span class="status-chip">钱包 ${money(state.wallet)}</span><span class="status-chip">银行 ${money(state.bank)}</span><span class="status-chip">债务 ${money(state.debt)}</span><span class="status-chip">总资产 ${money(total)}</span><span class="status-chip">动力 ${state.motivation}</span></div>
       ${state.missedRentStreak ? `<div class="result-box negative">⚠ 已连续${state.missedRentStreak}个月没有完整交租。连续3个月将破产。</div>` : ""}
-      <button id="next-month" class="pixel-btn ${failed ? "danger" : "primary"}" style="width:100%">${failed ? "面对破产" : finished ? "查看12个月结局" : `开始第${state.month + 1}月`}</button>`, { closable: false, wide: true, locked: true });
+      <button id="next-month" class="pixel-btn ${failed ? "danger" : "primary"}" style="width:100%">${failed ? "面对破产" : finished ? `查看${TOTAL_MONTHS}个月结局` : `开始第${state.month + 1}月`}</button>`, { closable: false, wide: true, locked: true });
     $("#next-month").addEventListener("click", () => {
       closeModal({ force: true });
       if (failed) showEnding(true);
@@ -1684,11 +1821,11 @@ const PERMANENT_ITEMS = [
     switchScreen("end");
     const assets = totalAssets();
     let title = "月底幸存者", art = "🧾", message = "你没有成为百万富翁，但至少房东暂时没有追出来。";
-    if (bankrupt) { title = "钱包正式投降"; art = "💸"; message = "哎呀，你真的撑不到月底了。下次记得先把房租放进银行。"; }
+    if (bankrupt) { title = "钱包正式投降"; art = "💸"; message = "哎呀，你真的撑不到月底了。下次记得先把房租的现金留在钱包。"; }
     else if (assets >= 9000) { title = "钱包战神"; art = "👑"; message = "十二个月过去，月底看到你都绕路走。"; }
     else if (assets >= 6500) { title = "投资勇者"; art = "🚀"; message = "你把工资、运气和一点胆量变成了真正的资产。"; }
-    else if (assets >= 4000) { title = "银行常客"; art = "🏦"; message = "你可能不富，但你至少知道房租应该放在哪里。"; }
-    $("#ending-kicker").textContent = bankrupt ? "游戏失败" : "12个月结束";
+    else if (assets >= 4000) { title = "银行常客"; art = "🏦"; message = "你可能不富，但你至少每个月都把房租准时交到房东手上。"; }
+    $("#ending-kicker").textContent = bankrupt ? "游戏失败" : `${TOTAL_MONTHS}个月结束`;
     $("#ending-title").textContent = title;
     $("#ending-art").textContent = art;
     $("#ending-message").textContent = message;
@@ -1768,11 +1905,14 @@ const PERMANENT_ITEMS = [
   // follows you all twelve months.
   const THIEF = {
     firstMonth: 3,          // months 1-2 are for learning the town
-    secondMonth: 7,         // a second one from here on
+    secondMonth: 6,         // a second one from here on, on a seven-month clock
     // Always slower than a rested player (152), but he picks up as the day wears on -
     // and you slow down as energy drains, so the two curves cross at night. Morning he
     // is a nuisance you jog away from; at night, tired, he is on your heels.
-    speedByPhase: { morning: 0.68, afternoon: 0.78, night: 0.88 },
+    speedByPhase: { morning: 0.58, afternoon: 0.66, night: 0.74 },
+    // The second one is an old hand who does not run any more. He is a threat only if
+    // you walk into him, which keeps two thieves from feeling like a wall of them.
+    slowpokeFactor: 0.45,
     // He sees less once it is dark, which is the counterweight to being quicker then.
     sightByPhase: { morning: 155, afternoon: 155, night: 100 },
     sightConeDeg: 35,
@@ -1814,12 +1954,17 @@ const PERMANENT_ITEMS = [
     state.thiefRespawn -= delta;
     if (state.thieves.length < thiefCountForMonth() && state.thiefRespawn <= 0) {
       const born = spawnThief();
-      if (born) state.thieves.push(born);
+      // There is always exactly one runner; any second is the slow one, so month 6
+      // adds pressure without doubling the speed you are running from. Keyed off who
+      // is actually out there, not spawn order, so robbing the runner does not leave
+      // two slowpokes (or, worse, promote the slowpoke).
+      if (born) { born.slow = state.thieves.some(other => !other.slow); state.thieves.push(born); }
       state.thiefRespawn = THIEF.respawnDelay;
     }
 
-    const speed = 152 * THIEF.speedByPhase[dayPhase()];
+    const baseSpeed = 152 * THIEF.speedByPhase[dayPhase()];
     for (const thief of state.thieves) {
+      const speed = baseSpeed * (thief.slow ? THIEF.slowpokeFactor : 1);
       thief.timer += delta;
       const toPlayer = Math.atan2(state.player.y - thief.y, state.player.x - thief.x);
       const distance = Math.hypot(state.player.x - thief.x, state.player.y - thief.y);
@@ -2332,6 +2477,7 @@ const PERMANENT_ITEMS = [
       tools: [...state.tempTools],
       tips: Object.keys(state.stockTips || {}),
       pendingStock: { ...(state.pendingStock || {}) },
+      nextStock: { ...(state.nextStock || {}) },
       stockChange: Object.fromEntries(STOCKS.map(item => [item.id, state.stockPrices[item.id].change]))
     };
   }

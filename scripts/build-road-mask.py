@@ -45,6 +45,10 @@ EDGES = [(0, 0, 960, 108), (0, 376, 232, 164), (876, 0, 84, 208)]
 # How many cells of roof to open at the top of each solid run.
 ROOF_TRIM = 4
 
+# A solid island of at most this many cells, entirely ringed by paving, is street
+# furniture rather than a building, so you walk past it instead of into it.
+FURNITURE_CELLS = 45
+
 
 def dilate(mask, k=1):
     out = mask.copy()
@@ -130,6 +134,39 @@ def road_mask():
             if run >= 3:
                 for k in range(min(ROOF_TRIM, run // 3 + 1)):
                     trimmed[start + k, gx] = True
+    # Street furniture: a bench, a bin or a misread patch of asphalt comes out as a
+    # small solid island sitting in open paving. Those are what wedge the player in the
+    # plaza -- you walk between two planters and a bench stops you dead. Anything whose
+    # entire border is real paving is freed; a building never qualifies, because its
+    # footprint always touches greenery, steps or the scenery frame.
+    solid = ~trimmed
+    seen = np.zeros_like(solid)
+    freed = []
+    for sy in range(rows):
+        for sx in range(cols):
+            if not solid[sy, sx] or seen[sy, sx]:
+                continue
+            queue = deque([(sy, sx)])
+            seen[sy, sx] = True
+            island, enclosed = [], True
+            while queue:
+                y, x = queue.popleft()
+                island.append((y, x))
+                for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                    if not (0 <= ny < rows and 0 <= nx < cols):
+                        enclosed = False               # runs off the edge of the world
+                        continue
+                    if solid[ny, nx] and not seen[ny, nx]:
+                        seen[ny, nx] = True
+                        queue.append((ny, nx))
+            if enclosed and len(island) <= FURNITURE_CELLS:
+                for y, x in island:
+                    trimmed[y, x] = True
+                freed.append((len(island), min(x for _, x in island) * CELL, min(y for y, _ in island) * CELL))
+
+    for size, x, y in sorted(freed, reverse=True):
+        print(f"//   freed street furniture: {size} cells at ({x},{y})", file=sys.stderr)
+
     # 0 solid, 1 passable but not real ground (hedges, roof edge), 2 road or paving
     return np.where(trimmed, np.where(paved, 2, 1), 0)
 

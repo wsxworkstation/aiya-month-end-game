@@ -4,9 +4,11 @@
 // The tip is only worth paying for if it names what is really going to happen, so this
 // lifts the four real functions out of game.js (rather than a copy that can drift) and
 // runs a year of months against them, checking three things:
-//   1. the wording band matches the number that was pre-rolled for this month
-//   2. the move applied at month end is exactly that pre-rolled number, not a re-roll
-//   3. the wording is directionally honest -- nothing called 涨 ever goes down
+//   1. both wordings match the numbers pre-rolled for this month and the next
+//   2. the move applied at month end is exactly this month's pre-rolled number
+//   3. next month's promise becomes next month's actual move, so a two-month tip is
+//      still true when the second month comes round
+//   4. the wording is directionally honest -- nothing called 涨 ever goes down
 
 const fs = require("fs");
 const path = require("path");
@@ -35,13 +37,15 @@ vm.createContext(sandbox);
 vm.runInContext([
   extract("const STOCKS = ["),
   extract("function rollStockChanges()"),
+  extract("function tipWording("),
   extract("function stockTipFor("),
+  extract("function stockTipNextFor("),
   extract("function updateStocks()"),
   // `const` in a VM context is not a property of its global, so hand them over.
-  "globalThis.exported = { STOCKS, rollStockChanges, stockTipFor, updateStocks };"
+  "globalThis.exported = { STOCKS, rollStockChanges, stockTipFor, stockTipNextFor, updateStocks };"
 ].join("\n"), sandbox);
 
-const { STOCKS, rollStockChanges, stockTipFor, updateStocks } = sandbox.exported;
+const { STOCKS, rollStockChanges, stockTipFor, stockTipNextFor, updateStocks } = sandbox.exported;
 
 // Same bands as stockTipFor, written out independently so a change to one side of the
 // pair shows up as a failure instead of quietly agreeing with itself.
@@ -53,17 +57,32 @@ let failures = 0, checked = 0;
 const fail = (msg) => { failures++; console.log("  FAIL " + msg); };
 const MONTHS = 2000;
 
+sandbox.state = {
+  pendingStock: rollStockChanges(),
+  nextStock: rollStockChanges(),
+  stockPrices: Object.fromEntries(STOCKS.map(s => [s.id, { price: s.price, change: 0 }]))
+};
+
+// One continuous run, so a tip given in month N is checked again when month N+1 lands.
 for (let month = 1; month <= MONTHS; month++) {
-  sandbox.state = {
-    pendingStock: rollStockChanges(),
-    stockPrices: Object.fromEntries(STOCKS.map(s => [s.id, { price: s.price, change: 0 }]))
-  };
   // What the player is told at the notice board, before anything is applied.
   const told = Object.fromEntries(STOCKS.map(s => [s.id, stockTipFor(s.id).text]));
+  const toldNext = Object.fromEntries(STOCKS.map(s => [s.id, stockTipNextFor(s.id).text]));
   const promised = { ...sandbox.state.pendingStock };
+  const promisedNext = { ...sandbox.state.nextStock };
 
   // Month end.
   updateStocks();
+
+  for (const stock of STOCKS) {
+    checked++;
+    if (sandbox.state.pendingStock[stock.id] !== promisedNext[stock.id]) {
+      fail(`month ${month} ${stock.name}: next month was promised ${promisedNext[stock.id]}%, but month ${month + 1} carries ${sandbox.state.pendingStock[stock.id]}%`);
+    }
+    if (toldNext[stock.id] !== expected(promisedNext[stock.id])) {
+      fail(`month ${month} ${stock.name}: said next month "${toldNext[stock.id]}" for a ${promisedNext[stock.id]}% move`);
+    }
+  }
 
   for (const stock of STOCKS) {
     checked++;
@@ -79,13 +98,13 @@ for (let month = 1; month <= MONTHS; month++) {
       fail(`month ${month} ${stock.name}: said "${told[stock.id]}" and moved the other way (${change}%)`);
     }
   }
-  if (sandbox.state.pendingStock) fail(`month ${month}: pendingStock was not cleared, next month would reuse it`);
+  if (!sandbox.state.nextStock) fail(`month ${month}: nextStock was not re-rolled, the two-month tip would run dry`);
 }
 
 // The tip is pointless if every stock lands in the same band, so check the spread too.
 const bands = {};
 for (let i = 0; i < 4000; i++) {
-  sandbox.state = { pendingStock: rollStockChanges(), stockPrices: {} };
+  sandbox.state = { pendingStock: rollStockChanges(), nextStock: {}, stockPrices: {} };
   for (const s of STOCKS) bands[stockTipFor(s.id).text] = (bands[stockTipFor(s.id).text] || 0) + 1;
 }
 const total = Object.values(bands).reduce((a, b) => a + b, 0);

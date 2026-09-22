@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#73bee6">
   <title>哎呀，又月底了呀</title>
-  <link rel="stylesheet" href="styles.css?v=25">
+  <link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body>
   <main id="app" aria-label="哎呀，又月底了呀游戏">
@@ -16,8 +16,8 @@
         <i></i><i></i><i></i><i></i><i></i><i></i>
       </div>
       <div class="title-layout">
-        <div class="title-badge" aria-label="十二个月，别破产">
-          <strong>12</strong><span>个月 · 别破产</span>
+        <div class="title-badge" aria-label="七个月，别破产">
+          <strong>7</strong><span>个月 · 别破产</span>
         </div>
         <div class="title-lockup">
           <h1><small>哎呀！</small><span>又月底了呀</span></h1>
@@ -42,6 +42,7 @@
       <header class="hud" aria-label="游戏状态">
         <div class="hud-brand">
           <strong id="month-label">第1月</strong>
+          <span id="month-total">共7月</span>
         </div>
         <div class="hud-stats">
           <div class="hud-stat wallet"><span>钱包</span><strong id="wallet-label">$500</strong></div>
@@ -71,12 +72,12 @@
         </div>
       </div>
 
-      <aside class="month-checklist" aria-label="本月事项">
-        <strong>本月</strong>
+      <aside class="month-checklist" aria-label="本月必做">
+        <strong>本月必做</strong>
         <span id="check-work">□ 工作</span>
         <span id="check-food">□ 吃饭</span>
-        <span id="check-fun">□ 娱乐</span>
         <span id="check-roi">□ ROI</span>
+        <span id="check-rent">□ 房租</span>
       </aside>
 
       <div class="mobile-controls" aria-label="手机控制器">
@@ -92,7 +93,7 @@
 
     <section id="end-screen" class="screen end-screen" hidden>
       <div class="ending-card pixel-panel">
-        <p id="ending-kicker" class="eyebrow">12个月结束</p>
+        <p id="ending-kicker" class="eyebrow">7个月结束</p>
         <h2 id="ending-title">月底幸存者</h2>
         <div id="ending-art" class="ending-art" aria-hidden="true">💰</div>
         <p id="ending-message"></p>
@@ -124,6 +125,6 @@
   </template>
 
   <script src="title-cover.js?v=1"></script>
-  <script src="game.js?v=23"></script>
+  <script src="game.js?v=24"></script>
 </body>
 </html>

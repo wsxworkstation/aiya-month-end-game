@@ -382,11 +382,11 @@ const PERMANENT_ITEMS = [
     { id: "spray", name: "防身喷雾", icon: "🧴", price: 150, spray: true, copy: "被小偷追上时自动使用，保住钱包" },
     { id: "energydrink", name: "提神饮料", icon: "⚡", price: 90, copy: "立刻动力+30", use: () => { state.motivation += 30; } },
     { id: "coffee", name: "三合一咖啡", icon: "☕", price: 60, copy: "立刻动力+18", use: () => { state.motivation += 18; } },
-    { id: "bus", name: "飞快巴士票", icon: "🚌", price: 70, copy: "立刻动力+15，省下走路的力气", use: () => { state.motivation += 15; } },
+    { id: "bus", name: "飞快巴士票", icon: "🚌", price: 50, copy: "立刻动力+15，省下走路的力气", use: () => { state.motivation += 15; } },
     { id: "amulet", name: "转运手绳", icon: "🧿", price: 80, copy: "本月幸运+15", use: () => { state.monthLuckBonus += 15; } },
     { id: "coin", name: "幸运硬币", icon: "🪙", price: 140, copy: "永久幸运+3", use: () => { state.luck = clamp(state.luck + 3, 0, 100); } },
     { id: "calculator", name: "不太作弊计算器", icon: "🧮", price: 120, copy: "下一道数学题答错也不扣工资", use: () => { state.mathShield = true; } },
-    { id: "meal", name: "免费餐券", icon: "🎟️", price: 130, copy: "本月下一餐免费", use: () => { state.freeFood = true; } },
+    { id: "meal", name: "免费餐券", icon: "🎟️", price: 50, copy: "本月下一餐免费", use: () => { state.freeFood = true; } },
     { id: "paper", name: "市场小道消息", icon: "📰", price: 180, copy: "本月交易所显示所有走势", use: () => { state.marketHint = true; } },
     { id: "alarm", name: "超级闹钟", icon: "⏰", price: 90, copy: "本月睡觉额外恢复8动力", use: () => { state.sleepBonus += 8; } },
     { id: "shortcut", name: "抄近路地图", icon: "🗺️", price: 110, copy: "本月走路省一半动力", use: () => { state.walkDiscount += 0.5; } }

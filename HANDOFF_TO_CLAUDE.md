@@ -1,6 +1,60 @@
 # Handoff to Claude Code — 《哎呀，又月底了呀》
 
-Updated: 2026-09-20
+Updated: 2026-09-23
+
+## Current rules, as of 2026-09-23
+
+A seven-month run. Each month you must work, eat and make one ROI investment
+before you can sleep; sleeping is what refills energy. Running the tank to zero
+collapses you outdoors instead, which ends the month and costs 25 energy off the
+next one. A night out is optional and once a month.
+
+Energy is only spent on walking, work, part-time shifts and shop purchases.
+Banking, trading and investing are free -- they are paperwork, not a day's work.
+Every counter that does charge energy refuses the action when you cannot afford
+it, rather than taking it and collapsing you mid-transaction.
+
+Rent is cash, handed to the landlord at home, and climbs $50 a month ($220 in
+month 1, $520 in month 7). Only the wallet counts, so leaving money in the bank
+is a real gamble; the bank's rate is re-rolled between 3% and 9% each month.
+Miss rent three months running and you are bankrupt. If you never pay, the
+landlord takes what is in your wallet at month end and the rest becomes debt.
+
+Work is the biggest single earner but only for the first shift of a month: the
+falloff is [1, 0.5, 0.25, 0.1], so a second hard shift pays $440 for 50 energy
+against the first one's $880. That is deliberate -- before it, two shifts paid
+$1,496 a month while the best possible month on the exchange paid $158, and the
+whole investing half of the game was decoration.
+
+The exchange lists all five stocks. Both this month's and next month's moves are
+rolled at the start of the month and applied unchanged, so the part-time tip
+(money plus two months of inside word on one stock) is always true and always
+actionable. ROI takes a typed amount capped at $1,000 for every project, and
+anything still invested when month seven ends settles in the final report.
+
+A position is capped at 30 shares of one stock, which is $810-$1,980 -- more
+than you start with, so the market only opens up once you have earned something.
+
+The shop has two shelves: three permanent goods (backpack, sell back at half
+price) and four one-shots, of which you may buy one of each kind per month.
+
+Thieves: one from month 3, two from month 6, exactly one of which is the runner
+(0.58/0.66/0.74 of player speed by time of day) and the other a 0.45 slowpoke.
+Going indoors clears the street; the first respawns after 20s, any second after 7.
+
+## Test suite
+
+Offline (no browser): `check-layout` `check-stock-tips` `check-endings`.
+Browser (needs playwright and a server on 8934): `check-month-rules` `check-market`
+`check-thieves` `check-low-energy` `check-card-shape`.
+
+`scripts/nav.js` plans a walk over the game's own collision mask, so browser tests
+steer from the live player position. Do not go back to recorded key sequences --
+they go stale the moment a door or walking speed changes.
+
+`?debug=1` exposes a read-only `window.__peek()` snapshot. Tests may also edit the
+month inside the game's own checkpoint (`aiyaMonthEndGame_checkpoint_v1`) and resume,
+which is how the month-7 thief case is reached without playing seven months.
 
 ## Codex illustrated title-cover pass (2026-09-20)
 

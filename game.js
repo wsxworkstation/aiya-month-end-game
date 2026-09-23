@@ -300,7 +300,9 @@ const ROAD_CELL = 6;
     monthStart: 100,
     noSleepPenalty: 25,       // collapse outdoors and next month opens short
     pixelsPerPoint: 80,       // walking the full 960px map costs about 12
-    partTime: 20,
+    // A shift pays $95-200 against the easy job's $320 for 15, so at 20 it was the worst
+    // money on the map and you went only for the tip. At 10 it is a detour worth taking.
+    partTime: 10,
     bank: 0,              // paperwork, not effort
     stock: 0,             // so is buying and selling
     roi: 0,               // and so is handing money to a project
@@ -308,7 +310,7 @@ const ROAD_CELL = 6;
     // Eating and working stay repeatable, so both need diminishing returns or the
     // pair becomes an infinite money loop (buy energy cheap, sell it dear).
     mealFalloff: [1, 0.6, 0.3, 0.1],
-    workFalloff: [1, 0.7, 0.5, 0.35],
+    workFalloff: [1, 0.5, 0.25, 0.1],
     // Time of day is read from energy left, and only ever moves forward.
     afternoonBelow: 50,
     nightBelow: 25
@@ -319,6 +321,10 @@ const ROAD_CELL = 6;
     { id: "normal", name: "普通的活", icon: "💼", energy: 30, pay: 560, span: 25, copy: "题目普通" },
     { id: "hard", name: "困难的活", icon: "🧠", energy: 50, pay: 880, span: 40, copy: "题目会让你想一下" }
   ];
+
+  // A holding you can actually feel. With a two-month tip in hand, 30 shares of the
+  // right stock is worth the trip; 10 was never going to beat a shift at the office.
+  const STOCK_MAX_SHARES = 30;
 
   const STOCKS = [
     { id: "tech", name: "嗖嗖科技", icon: "💻", price: 66 },
@@ -1436,7 +1442,7 @@ const PERMANENT_ITEMS = [
     const offers = STOCKS;
     const holdings = Object.entries(state.holdings).filter(([, holding]) => holding.qty > 0);
     openModal(`<p class="eyebrow">涨跌交易所</p><h2>今天的行情</h2><div class="status-strip">${ENERGY.stock ? `<span class="status-chip">买卖一次 动力-${ENERGY.stock}</span>` : ""}<span class="status-chip">动力 ${Math.round(state.motivation)}</span></div>
-      <p class="modal-intro">五只全在这里。本月只能买一种，最多10股，持有的随时可卖。</p>
+      <p class="modal-intro">五只全在这里。本月只能买一种，最多${STOCK_MAX_SHARES}股，持有的随时可卖。</p>
       <div class="card-grid">${offers.map(item => {
         const price = state.stockPrices[item.id];
         const known = state.stockTips[item.id] || state.marketHint;
@@ -1456,13 +1462,13 @@ const PERMANENT_ITEMS = [
   function buyStockPrompt(id) {
     if (state.flags.stockBought) { showToast("本月已经买过一种股票"); return; }
     const stock = STOCKS.find(item => item.id === id), price = state.stockPrices[id].price;
-    openModal(`<p class="eyebrow">买入股票</p><h2>${stock.icon} ${stock.name}</h2><p>当前每股${money(price)}，最多持有10股。所选账户不足时会自动使用另一个账户补足。</p>
-      <div class="input-row"><label>购买股数<select id="stock-qty">${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}">${i + 1}股 · ${money((i + 1) * price)}</option>`).join("")}</select></label>
+    openModal(`<p class="eyebrow">买入股票</p><h2>${stock.icon} ${stock.name}</h2><p>当前每股${money(price)}，最多持有${STOCK_MAX_SHARES}股。所选账户不足时会自动使用另一个账户补足。</p>
+      <div class="input-row"><label>购买股数<select id="stock-qty">${Array.from({ length: STOCK_MAX_SHARES }, (_, i) => i + 1).filter(n => n <= 5 || n % 5 === 0).map(n => `<option value="${n}"${n === 10 ? " selected" : ""}>${n}股 · ${money(n * price)}</option>`).join("")}</select></label>
       <label>优先付款<select id="stock-payment"><option value="wallet">钱包优先</option><option value="bank">银行优先</option><option value="auto">自动组合</option></select></label>
       <button id="confirm-stock" class="pixel-btn primary">确认购买</button><button id="back-stock" class="pixel-btn">返回</button></div>`);
     $("#confirm-stock").addEventListener("click", () => {
       const qty = Number($("#stock-qty").value), currentQty = state.holdings[id]?.qty || 0;
-      if (currentQty + qty > 10) { showToast("这只股票最多持有10股"); return; }
+      if (currentQty + qty > STOCK_MAX_SHARES) { showToast(`这只股票最多持有${STOCK_MAX_SHARES}股`); return; }
       const cost = qty * price;
       const payment = $("#stock-payment").value;
       if (!hasEnergyFor(ENERGY.stock)) { showToast(`动力不够，买卖要${ENERGY.stock}点`); return; }
@@ -2507,6 +2513,9 @@ const PERMANENT_ITEMS = [
       wanted: thiefCountForMonth(),
       thievesType: Array.isArray(state.thieves) ? "array" : typeof state.thieves,
       rent: currentRent(),
+      rentPaid: !!state.rentPaid,
+      holdings: Object.fromEntries(Object.entries(state.holdings).map(([id, h]) => [id, { qty: h.qty, avg: h.avg }])),
+      work: !!state.flags.work, food: !!state.flags.food, roi: !!state.flags.roi, fun: !!state.flags.fun,
       items: [...state.permanentItems],
       tools: [...state.tempTools],
       tips: Object.keys(state.stockTips || {}),

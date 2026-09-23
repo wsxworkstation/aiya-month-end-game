@@ -1828,16 +1828,31 @@ const PERMANENT_ITEMS = [
     return Math.round(state.wallet + state.bank + stockValue + pending - state.debt);
   }
 
+  // The old ladder was written for a twelve-month game and had no rung below zero, so a
+  // player who finished $1,026 in the hole was congratulated as a 幸存者.
+  function endingFor(assets, bankrupt) {
+    if (bankrupt) return { title: "钱包正式投降", art: "💸",
+      message: "连续三个月交不出房租，房东把钥匙收走了。下次记得把房租的现金留在钱包。" };
+    if (assets < 0) return { title: "欠了一屁股债", art: "📉",
+      message: `${TOTAL_MONTHS}个月下来，你欠的比你有的还多。撑是撑完了，但账还在。` };
+    if (assets < 1000) return { title: "月光光", art: "🫙",
+      message: "每个月刚好打平，钱包永远在月底见底。至少没欠人家的。" };
+    if (assets < 3000) return { title: "月底幸存者", art: "🧾",
+      message: "你没有成为百万富翁，但房东再也没有追出来过。" };
+    if (assets < 6000) return { title: "银行常客", art: "🏦",
+      message: "存了一点，也花了一点。柜台阿姨已经认得你了。" };
+    if (assets < 10000) return { title: "投资勇者", art: "🚀",
+      message: "你把工资、运气和一点胆量变成了真正的资产。" };
+    return { title: "钱包战神", art: "👑",
+      message: `${TOTAL_MONTHS}个月过去，月底看到你都绕路走。` };
+  }
+
   function showEnding(bankrupt) {
     playing = false; paused = true; stopMusic();
     localStorage.removeItem(GAME_KEY);
     switchScreen("end");
     const assets = totalAssets();
-    let title = "月底幸存者", art = "🧾", message = "你没有成为百万富翁，但至少房东暂时没有追出来。";
-    if (bankrupt) { title = "钱包正式投降"; art = "💸"; message = "哎呀，你真的撑不到月底了。下次记得先把房租的现金留在钱包。"; }
-    else if (assets >= 9000) { title = "钱包战神"; art = "👑"; message = "十二个月过去，月底看到你都绕路走。"; }
-    else if (assets >= 6500) { title = "投资勇者"; art = "🚀"; message = "你把工资、运气和一点胆量变成了真正的资产。"; }
-    else if (assets >= 4000) { title = "银行常客"; art = "🏦"; message = "你可能不富，但你至少每个月都把房租准时交到房东手上。"; }
+    const { title, art, message } = endingFor(assets, bankrupt);
     $("#ending-kicker").textContent = bankrupt ? "游戏失败" : `${TOTAL_MONTHS}个月结束`;
     $("#ending-title").textContent = title;
     $("#ending-art").textContent = art;
@@ -1935,7 +1950,11 @@ const PERMANENT_ITEMS = [
     spotFreeze: 0.45,       // he gawks for a beat before giving chase
     scanPeriod: 2.4,        // seconds for one full look left-and-right
     scanSweepDeg: 55,
-    respawnDelay: 20
+    respawnDelay: 20,       // grace period after you step back outside
+    // Topping the streets back up to two used to take another full delay, so ducking
+    // into a shop every half minute meant you never met more than one of them.
+    refillDelay: 7,
+    retryDelay: 1           // a spawn that found nowhere to stand should not cost 20s
   };
 
   function thiefCountForMonth() {
@@ -1972,7 +1991,9 @@ const PERMANENT_ITEMS = [
       // is actually out there, not spawn order, so robbing the runner does not leave
       // two slowpokes (or, worse, promote the slowpoke).
       if (born) { born.slow = state.thieves.some(other => !other.slow); state.thieves.push(born); }
-      state.thiefRespawn = THIEF.respawnDelay;
+      state.thiefRespawn = !born ? THIEF.retryDelay
+        : state.thieves.length ? THIEF.refillDelay
+        : THIEF.respawnDelay;
     }
 
     const baseSpeed = 152 * THIEF.speedByPhase[dayPhase()];
@@ -2480,7 +2501,7 @@ const PERMANENT_ITEMS = [
       energy: Math.round(state.motivation), spent: Math.round(state.energySpent),
       phase: dayPhase(), scene: state.scene, playing,
       player: { x: Math.round(state.player.x), y: Math.round(state.player.y) },
-      thieves: state.thieves.map(t => ({ x: Math.round(t.x), y: Math.round(t.y), mode: t.mode })),
+      thieves: state.thieves.map(t => ({ x: Math.round(t.x), y: Math.round(t.y), mode: t.mode, slow: !!t.slow })),
       spray: state.sprayCharges,
       thiefRespawn: Math.round((state.thiefRespawn || 0) * 10) / 10,
       wanted: thiefCountForMonth(),
